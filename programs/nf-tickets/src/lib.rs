@@ -37,5 +37,18 @@ pub mod nf_tickets {
         ctx.accounts.withdraw_from_treasury(amount)
     }
 
+    pub fn list(ctx: Context<List>, price: u64) -> Result<()> {
+        ctx.accounts.create_listing(price, &ctx.bumps)?;
+        ctx.accounts.deposit_nft()
+    }
+
+    pub fn delist(ctx: Context<Delist>, ) -> Result<()> {
+        ctx.accounts.withdraw_nft()
+    }
+
+    pub fn purchase_resale(ctx: Context<PurchaseResale>) -> Result<()> {
+        ctx.accounts.send_sol()
+    }
+
 }
 
