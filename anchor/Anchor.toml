@@ -1,0 +1,36 @@
+[toolchain]
+
+[features]
+resolution = true
+skip-lint = false
+
+[test]
+startup_wait = 20000
+
+[test.validator]
+url = "https://api.mainnet-beta.solana.com"
+[[test.validator.clone]]
+address = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+
+[programs.localnet]
+#nf_tickets = "FiTx6nFmuJnP7AX63RrXHWKZRDZL6FYTDFX1EQ61Ajvz"
+nf_tickets = "5qCfMhUmbJmau9SGHP1qAEMfKwEzyyyQ846SMXX2y6w"
+
+
+[programs.devnet]
+nf_tickets = "5qCfMhUmbJmau9SGHP1qAEMfKwEzyyyQ846SMXX2y6w"
+
+# [programs.mainnet]
+# nf_tickets = "FiTx6nFmuJnP7AX63RrXHWKZRDZL6FYTDFX1EQ61Ajvz"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+# cluster = "Devnet"
+cluster = "Localnet"
+# wallet = "/home/allen/Q3T_Sol_Allen_Saji/nf-tickets/target/deploy/final_keypair.json"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

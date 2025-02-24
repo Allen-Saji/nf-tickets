@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int           @id @default(autoincrement())
+  username       String        @unique
+  email          String        @unique
+  image          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  artistProfile  ArtistProfile?
+  walletAddress  String?
+}
+
+model ArtistProfile {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @unique
+  user              User     @relation(fields: [userId], references: [id])
+  artistName        String
+  bio               String?
+  category          Category
+  profilePictureUrl String?
+  backgroundImageUrl String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  events            Event[]
+  walletAddress     String
+}
+
+model Event {
+  id          Int        @id @default(autoincrement())
+  artistId    Int
+  artist      ArtistProfile @relation(fields: [artistId], references: [id])
+  eventName   String
+  eventDate   DateTime
+  venue       String
+  city        String
+  category    String
+  capacity    Int
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+enum Category {
+ Music 
+ Comedy
+ Tech
+ Dance
+ Sports
+}
+
+enum Provider {
+  Google
+}
