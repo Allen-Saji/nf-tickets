@@ -1,7 +1,7 @@
 import { ArtistProfile } from "./../../../node_modules/.prisma/client/index.d";
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import db from "@/app/db";
+import { db } from "@/server/db";
 import { Session } from "next-auth";
 
 export interface session extends Session {
