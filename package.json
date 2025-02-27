@@ -1,5 +1,5 @@
 {
-  "name": "@solana/actions-example-next-js",
+  "name": "nf-tickets",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.7.4",
     "@coral-xyz/anchor": "^0.30.1",
     "@hookform/resolvers": "^3.9.0",
     "@metaplex-foundation/mpl-toolbox": "^0.9.4",
@@ -42,7 +43,7 @@
     "js-base64": "^3.7.7",
     "lucide-react": "^0.390.0",
     "next": "^14.2.24",
-    "next-auth": "^4.24.8",
+    "next-auth": "^4.24.11",
     "next-themes": "^0.3.0",
     "qrcode.react": "^4.0.1",
     "react": "^18",

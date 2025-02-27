@@ -1,11 +1,16 @@
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
-
+import { authOptions } from "@/app/lib/auth";
 import { db } from "@/server/db";
+import { getServerSession } from "next-auth";
+
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+  const session = await getServerSession(authOptions);
+
   return {
     db,
+    session,
     ...opts,
   };
 };
@@ -52,3 +57,17 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 });
 
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+export const protectedProcedure = t.procedure.use(
+  t.middleware(({ ctx, next }) => {
+    if (!ctx.session || !ctx.session.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+    return next({
+      ctx: {
+        ...ctx,
+        session: { ...ctx.session, user: ctx.session.user },
+      },
+    });
+  })
+);
