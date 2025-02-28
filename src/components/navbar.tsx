@@ -24,7 +24,7 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { data: session } = useSession();
   const [placeholder, setPlaceholder] = useState("events");
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [_isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     const texts = ["events", "artists", "venues"];
@@ -100,10 +100,13 @@ const Navbar = () => {
 
           <div className="flex items-center space-x-4">
             {session?.user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="p-0 h-auto">
-                    <div className="flex items-center">
+              <div className="relative">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="p-2 h-auto flex items-center gap-2 hover:bg-gray-800 rounded-lg"
+                    >
                       <div className="relative w-10 h-10 sm:w-12 sm:h-12">
                         <Image
                           src={session.user.image || "/default-avatar.png"}
@@ -112,32 +115,45 @@ const Navbar = () => {
                           className="rounded-full object-cover"
                         />
                       </div>
-                      <span className="ml-2 text-lg font-medium text-white hidden sm:inline">
+                      <span className="ml-2 text-lg font-medium text-white hidden sm:inline max-w-[120px] truncate">
                         {session.user.name}
                       </span>
-                      <ChevronDown className="ml-2 h-5 w-5 text-white" />
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {session.user.ArtistProfile ? (
-                    <DropdownMenuItem asChild>
-                      <Link href="/artist/profile">
-                        Switch to Artist Profile
-                      </Link>
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem asChild>
-                      <Link href="/artist/create">Create Artist Profile</Link>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem
-                    onClick={() => signOut({ callbackUrl: "/" })}
+                      <ChevronDown className="h-5 w-5 text-white" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    sideOffset={5}
+                    className="bg-gray-900 border border-gray-800 text-white p-2 rounded-lg z-50 w-[200px] max-w-[95vw] overflow-hidden"
                   >
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {session.user.role === "ARTIST" ? (
+                      <DropdownMenuItem className="px-0 py-0 focus:bg-transparent">
+                        <Link
+                          href="/artist/profile"
+                          className="w-full px-2 py-2 block cursor-pointer hover:bg-gray-800 rounded-md"
+                        >
+                          Switch to Artist Profile
+                        </Link>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem className="px-0 py-0 focus:bg-transparent">
+                        <Link
+                          href="/artist/create"
+                          className="w-full px-4 py-2 block cursor-pointer hover:bg-gray-800 rounded-md"
+                        >
+                          Create Artist Profile
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                      className="w-full px-4 py-2 mt-1 cursor-pointer hover:bg-gray-800 rounded-md text-red-400 focus:bg-gray-800 focus:text-red-400"
+                    >
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ) : (
               <ShimmerButton
                 onClick={() => signIn("google")}

@@ -7,13 +7,8 @@ import Phone from "@/components/phone";
 export default function Home() {
   return (
     <main className="relative min-h-screen flex flex-col bg-black text-white overflow-hidden">
-      {/* Your navbar would go here, but you mentioned it's already done */}
-
-      {/* Main content area */}
       <div className="flex-grow flex flex-col items-center justify-center px-6">
-        {/* Hero section with text and image */}
         <div className="relative w-full max-w-6xl mx-auto flex items-center justify-center py-16">
-          {/* Left side text */}
           <div className="absolute left-0 text-right z-10">
             <h1 className="text-5xl md:text-6xl font-bold whitespace-nowrap">
               <span className="text-[#DEFF58]">Let's </span>
@@ -23,7 +18,6 @@ export default function Home() {
             </h1>
           </div>
 
-          {/* Center image */}
           <div className="relative h-[300px] md:h-[400px] w-[500px] md:w-[600px] ">
             <Image
               src="/solana.svg"
@@ -34,7 +28,6 @@ export default function Home() {
             />
           </div>
 
-          {/* Right side text */}
           <div className="absolute right-0 text-left z-10">
             <h1 className="text-5xl md:text-6xl font-bold whitespace-nowrap justify-center">
               Transform
@@ -49,7 +42,6 @@ export default function Home() {
         {/* Horizontal line */}
         <div className="w-full max-w-6xl mx-auto border-t border-gray-800 my-6"></div>
 
-        {/* Bottom text */}
         <div className="w-full max-w-3xl mx-auto text-center text-gray-300 pb-12">
           <p>
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
@@ -65,10 +57,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* New Shows Section */}
       <div className="w-full max-w-6xl mx-auto py-16 px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-12">
-          {/* Left side - Big text */}
           <div className="md:w-1/2">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
               All your <span className="text-[#DEFF58]">favorite shows</span>{" "}
@@ -84,8 +74,6 @@ export default function Home() {
               <ArrowRight className="w-5 h-5" />
             </Button>
           </div>
-
-          {/* Right side - Custom Phone with notifications */}
           <Phone />
         </div>
       </div>
