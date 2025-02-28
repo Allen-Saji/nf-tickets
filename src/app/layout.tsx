@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { cn } from "@/lib/utils";
 import Navbar from "@/components/navbar";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -41,6 +42,7 @@ export default function RootLayout({
             ></div>
 
             <main className="mx-4 overflow-x-hidden">{children}</main>
+            <Toaster />
           </div>
         </Providers>
       </body>
