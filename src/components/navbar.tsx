@@ -21,10 +21,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
   const { data: session } = useSession();
   const [placeholder, setPlaceholder] = useState("events");
   const [_isTransitioning, setIsTransitioning] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const texts = ["events", "artists", "venues"];
@@ -42,21 +42,8 @@ const Navbar = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-black bg-opacity-50 backdrop-blur-lg" : "bg-black"
-      } `}
-    >
+    <nav className="sticky top-0 left-0 w-full z-50 bg-black/80 backdrop-blur-lg">
       <div className="w-full max-w-full px-6 sm:px-10 lg:px-14">
         <div className="flex items-center justify-between h-20">
           <div className="flex-none">
@@ -73,8 +60,8 @@ const Navbar = () => {
             </Link>
           </div>
 
-          <div className="hidden md:flex flex-1 justify-center items-center">
-            <div className="flex items-center space-x-8 mx-auto">
+          <div className="hidden md:block md:flex-1">
+            <div className="flex items-center justify-center space-x-8">
               <Link
                 href="/"
                 className="text-white hover:text-[#DEFF58] px-4 py-2 rounded-md text-lg font-semibold"
@@ -101,7 +88,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {session?.user ? (
               <div className="relative">
-                <DropdownMenu>
+                <DropdownMenu open={open} onOpenChange={setOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
@@ -124,13 +111,14 @@ const Navbar = () => {
                   <DropdownMenuContent
                     align="start"
                     sideOffset={5}
-                    className="bg-gray-900 border border-gray-800 text-white p-2 rounded-lg z-50 w-[200px] max-w-[95vw] overflow-hidden"
+                    className="bg-gray-900 border border-gray-800 text-white p-2 rounded-lg w-[200px] max-w-[95vw] fixed"
                   >
                     {session.user.role === "ARTIST" ? (
                       <DropdownMenuItem className="px-0 py-0 focus:bg-transparent">
                         <Link
                           href="/artist/profile"
                           className="w-full px-2 py-2 block cursor-pointer hover:bg-gray-800 rounded-md"
+                          onClick={() => setOpen(false)}
                         >
                           Switch to Artist Profile
                         </Link>
@@ -140,13 +128,17 @@ const Navbar = () => {
                         <Link
                           href="/artist/create"
                           className="w-full px-4 py-2 block cursor-pointer hover:bg-gray-800 rounded-md"
+                          onClick={() => setOpen(false)}
                         >
                           Create Artist Profile
                         </Link>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
-                      onClick={() => signOut({ callbackUrl: "/" })}
+                      onClick={() => {
+                        setOpen(false);
+                        signOut({ callbackUrl: "/" });
+                      }}
                       className="w-full px-4 py-2 mt-1 cursor-pointer hover:bg-gray-800 rounded-md text-red-400 focus:bg-gray-800 focus:text-red-400"
                     >
                       Logout
