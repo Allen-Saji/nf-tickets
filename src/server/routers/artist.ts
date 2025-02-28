@@ -10,8 +10,8 @@ export const artistRouter = createTRPCRouter({
         artistName: z.string().min(1, "Artist name is required"),
         bio: z.string().optional(),
         genre: z.string().min(1, "Genre is required"),
-        profilePictureUrl: z.string().url().optional(),
-        backgroundImageUrl: z.string().url().optional(),
+        profilePictureUrl: z.string().url().optional().nullable(),
+        backgroundImageUrl: z.string().url().optional().nullable(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -68,8 +68,8 @@ export const artistRouter = createTRPCRouter({
         artistName: z.string().min(1, "Artist name is required").optional(),
         bio: z.string().optional(),
         genre: z.string().min(1, "Genre is required").optional(),
-        profilePictureUrl: z.string().url().optional(),
-        backgroundImageUrl: z.string().url().optional(),
+        profilePictureUrl: z.string().url().optional().nullable(),
+        backgroundImageUrl: z.string().url().optional().nullable(),
       })
     )
     .mutation(async ({ ctx, input }) => {
