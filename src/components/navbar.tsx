@@ -22,6 +22,7 @@ import {
 
 const Navbar = () => {
   const { data: session } = useSession();
+  console.log("session", session?.user);
   const [placeholder, setPlaceholder] = useState("events");
   const [_isTransitioning, setIsTransitioning] = useState(false);
   const [open, setOpen] = useState(false);
