@@ -1,12 +1,19 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { Category } from "@prisma/client";
-import { ArrowRight, CalendarIcon, Loader2, Upload } from "lucide-react";
+import { formSchema } from "./eventSchema";
+import {
+  ArrowRight,
+  CalendarIcon,
+  Loader2,
+  Upload,
+  Wallet,
+} from "lucide-react";
 import { Particles } from "@/components/magicui/particles";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,59 +43,24 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
-
-// Validation schema
-const formSchema = z.object({
-  eventName: z
-    .string()
-    .min(3, {
-      message: "Event name must be at least 3 characters.",
-    })
-    .max(100, {
-      message: "Event name must not exceed 100 characters.",
-    }),
-  eventDate: z
-    .date({
-      required_error: "Please select a date for the event.",
-    })
-    .refine((date) => date > new Date(), {
-      message: "Event date must be in the future.",
-    }),
-  venue: z
-    .string()
-    .min(3, {
-      message: "Venue must be at least 3 characters.",
-    })
-    .max(100, {
-      message: "Venue must not exceed 100 characters.",
-    }),
-  city: z
-    .string()
-    .min(2, {
-      message: "City must be at least 2 characters.",
-    })
-    .max(50, {
-      message: "City must not exceed 50 characters.",
-    }),
-  category: z.nativeEnum(Category, {
-    required_error: "Please select an event category.",
-  }),
-  capacity: z.coerce.number().int().positive({
-    message: "Capacity must be a positive number.",
-  }),
-  description: z.string().optional(),
-  eventImage: z.any().optional(),
-});
+import dynamic from "next/dynamic";
+const WalletMultiButton = dynamic(
+  async () =>
+    (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
+  { ssr: false }
+);
+import { useWallet } from "@solana/wallet-adapter-react";
+import "@solana/wallet-adapter-react-ui/styles.css";
 
 type FormValues = z.infer<typeof formSchema>;
-
 export default function CreateEventForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
-  // tRPC hook for creating an event
+  const { connected, publicKey } = useWallet();
+
   const createEvent = api.event.create.useMutation({
     onSuccess: () => {
       toast.success("Event Created", {
@@ -111,7 +83,6 @@ export default function CreateEventForm() {
     },
   });
 
-  // Form setup with zod resolver
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -121,10 +92,17 @@ export default function CreateEventForm() {
       capacity: 100,
       description: "",
       eventImage: undefined,
+      artistWallet: "",
+      isTicketTransferable: false,
     },
   });
 
-  // Image upload handler
+  useEffect(() => {
+    if (connected && publicKey) {
+      form.setValue("artistWallet", publicKey.toString());
+    }
+  }, [connected, publicKey, form]);
+
   const uploadImage = async (file: File) => {
     try {
       setIsUploadingImage(true);
@@ -160,24 +138,32 @@ export default function CreateEventForm() {
     }
   };
 
-  // Form submission handler
   const onSubmit = async (data: FormValues) => {
+    if (!connected || !publicKey) {
+      toast.error("Wallet Required", {
+        description: "Please connect your wallet to create an event",
+        duration: 5000,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      let eventImageUrl = "";
+      let imageUrl = ""; // Changed from eventImageUrl to imageUrl
 
       if (data.eventImage instanceof File) {
-        eventImageUrl = await uploadImage(data.eventImage);
-        if (!eventImageUrl) {
+        imageUrl = await uploadImage(data.eventImage);
+        if (!imageUrl) {
           setIsSubmitting(false);
-          return; // Stop if upload failed
+          return;
         }
       }
 
       const formattedData = {
         ...data,
-        eventImageUrl,
+        imageUrl,
+        artistWallet: publicKey.toString(),
       };
 
       createEvent.mutate(formattedData);
@@ -193,14 +179,41 @@ export default function CreateEventForm() {
 
   return (
     <div className="flex items-center justify-center bg-black text-white min-h-screen overflow-hidden">
-      <Card className="w-full max-w-xl bg-[#10121f] border border-gray-800 rounded-lg shadow-xl z-10">
+      <Card className="w-full my-4 max-w-xl bg-[#10121f] border border-gray-800 rounded-lg shadow-xl z-10">
         <CardContent className="pt-6 pb-8">
-          <h1 className="text-2xl font-bold mb-6">
-            Create <span className="text-[#DEFF58]">New Event</span>
-          </h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">
+              Create <span className="text-[#DEFF58]">New Event</span>
+            </h1>
+
+            <div className="wallet-adapter-wrapper">
+              <WalletMultiButton />
+            </div>
+          </div>
+
+          <div className="mb-6 p-3 bg-[#1a1d2d] rounded-md border border-gray-700">
+            <p className="text-sm flex items-center">
+              <Wallet className="h-4 w-4 mr-2" />
+              {connected ? (
+                <span className="text-green-400">
+                  Wallet Connected: {publicKey?.toString().slice(0, 6)}...
+                  {publicKey?.toString().slice(-4)}
+                </span>
+              ) : (
+                <span className="text-amber-400">
+                  Please connect your wallet to create an event
+                </span>
+              )}
+            </p>
+          </div>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              <input
+                type="hidden"
+                {...form.register("artistWallet")}
+                value={publicKey?.toString() || ""}
+              />
               <FormField
                 control={form.control}
                 name="eventName"
@@ -214,6 +227,7 @@ export default function CreateEventForm() {
                         placeholder="Enter your event name"
                         {...field}
                         className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
+                        disabled={!connected}
                       />
                     </FormControl>
                     <FormMessage className="text-red-400" />
@@ -236,6 +250,7 @@ export default function CreateEventForm() {
                             <Button
                               variant="outline"
                               className="w-full bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm pl-3 text-left font-normal"
+                              disabled={!connected}
                             >
                               {field.value ? (
                                 format(field.value, "PPP")
@@ -256,7 +271,7 @@ export default function CreateEventForm() {
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={(date) => date < new Date()}
+                            disabled={(date) => date < new Date() || !connected}
                             initialFocus
                             className="text-white"
                           />
@@ -278,6 +293,7 @@ export default function CreateEventForm() {
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
+                        disabled={!connected}
                       >
                         <FormControl>
                           <SelectTrigger className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm">
@@ -316,6 +332,7 @@ export default function CreateEventForm() {
                           placeholder="Enter venue name"
                           {...field}
                           className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
+                          disabled={!connected}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -336,6 +353,7 @@ export default function CreateEventForm() {
                           placeholder="Enter city name"
                           {...field}
                           className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
+                          disabled={!connected}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -359,6 +377,7 @@ export default function CreateEventForm() {
                         placeholder="Enter event capacity"
                         {...field}
                         className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
+                        disabled={!connected}
                       />
                     </FormControl>
                     <FormDescription className="text-xs text-gray-400">
@@ -379,7 +398,13 @@ export default function CreateEventForm() {
                     </FormLabel>
                     <div className="flex flex-col gap-2">
                       <FormControl>
-                        <div className="bg-[#1a1d2d] border border-gray-700 border-dashed rounded-md p-4 text-center cursor-pointer hover:bg-[#262a3d] transition-colors relative">
+                        <div
+                          className={`bg-[#1a1d2d] border border-gray-700 border-dashed rounded-md p-4 text-center transition-colors relative ${
+                            connected
+                              ? "hover:bg-[#262a3d] cursor-pointer"
+                              : "opacity-70"
+                          }`}
+                        >
                           <Input
                             type="file"
                             accept="image/*"
@@ -396,12 +421,16 @@ export default function CreateEventForm() {
                               }
                               onChange(file);
                             }}
-                            disabled={isUploadingImage}
+                            disabled={isUploadingImage || !connected}
                             {...field}
                           />
                           <label
                             htmlFor="eventImage"
-                            className="cursor-pointer flex flex-col items-center gap-2"
+                            className={`flex flex-col items-center gap-2 ${
+                              connected
+                                ? "cursor-pointer"
+                                : "cursor-not-allowed"
+                            }`}
                           >
                             {isUploadingImage ? (
                               <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
@@ -443,6 +472,7 @@ export default function CreateEventForm() {
                         placeholder="Describe your event, what attendees can expect..."
                         {...field}
                         className="bg-[#1a1d2d] border-gray-700 focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white resize-none h-28 placeholder:text-gray-500 rounded-md text-sm"
+                        disabled={!connected}
                       />
                     </FormControl>
                     <FormDescription className="text-xs text-gray-400">
@@ -453,15 +483,68 @@ export default function CreateEventForm() {
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="isTicketTransferable"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-700 bg-[#1a1d2d] p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-gray-200 text-sm font-medium">
+                        Allow Ticket Transfers
+                      </FormLabel>
+                      <FormDescription className="text-xs text-gray-400">
+                        Enable attendees to transfer tickets to others
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <div className="relative inline-block">
+                        <div
+                          onClick={() =>
+                            connected && field.onChange(!field.value)
+                          }
+                          className={`w-12 h-6 rounded-full transition-colors duration-200 ease-in-out ${
+                            field.value ? "bg-[#DEFF58]" : "bg-gray-700"
+                          } ${
+                            connected
+                              ? "cursor-pointer"
+                              : "cursor-not-allowed opacity-60"
+                          } border-2 border-gray-600 flex items-center`}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-200 ease-in-out ${
+                              field.value ? "translate-x-7" : "translate-x-1"
+                            } border border-gray-400`}
+                          ></div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={field.value}
+                          onChange={(e) =>
+                            connected && field.onChange(e.target.checked)
+                          }
+                          disabled={!connected}
+                        />
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
               <Button
                 type="submit"
-                disabled={isSubmitting || isUploadingImage}
-                className="w-full mt-6 bg-[#DEFF58] text-black font-semibold rounded-full h-12 transition-all duration-300 hover:bg-[#f0ff85] hover:scale-[1.02]"
+                disabled={isSubmitting || isUploadingImage || !connected}
+                className="w-full mt-6 bg-[#DEFF58] text-black font-semibold rounded-full h-12 transition-all duration-300 hover:bg-[#f0ff85] hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Creating...
+                  </>
+                ) : !connected ? (
+                  <>
+                    Connect Wallet to Create Event
+                    <Wallet className="w-5 h-5 ml-2" />
                   </>
                 ) : (
                   <>
