@@ -100,12 +100,13 @@ export const eventRouter = createTRPCRouter({
         category: z.nativeEnum(Category),
         capacity: z.number().int().positive(),
         description: z.string().optional(),
-        imageUrl: z.string().url().optional(), // Added imageUrl field
+        imageUrl: z.string().url().optional(),
+        artistWallet: z.string(),
+        isTicketTransferable: z.boolean().default(false),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const { user } = ctx.session;
-
       // Check if user is an artist
       if (user.role !== "ARTIST") {
         throw new TRPCError({
@@ -113,12 +114,10 @@ export const eventRouter = createTRPCRouter({
           message: "Only artists can create events",
         });
       }
-
       // Get the artist profile
       const artistProfile = await ctx.db.artistProfile.findUnique({
         where: { userId: user.id },
       });
-
       if (!artistProfile) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -126,14 +125,17 @@ export const eventRouter = createTRPCRouter({
         });
       }
 
-      // Create the event
+      // Extract the fields that don't match the schema
+      const { artistWallet, ...restInput } = input;
+
+      // Create the event with properly named fields
       const event = await ctx.db.event.create({
         data: {
-          ...input,
+          ...restInput,
           artistId: artistProfile.id,
+          artistWallet, // Add this field explicitly
         },
       });
-
       return event;
     }),
 
@@ -149,7 +151,9 @@ export const eventRouter = createTRPCRouter({
         category: z.nativeEnum(Category).optional(),
         capacity: z.number().int().positive().optional(),
         description: z.string().optional(),
-        imageUrl: z.string().url().optional(), // Added imageUrl field
+        imageUrl: z.string().url().optional(),
+        artistWallet: z.string().optional(),
+        isTicketTransferable: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

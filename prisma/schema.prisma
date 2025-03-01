@@ -76,6 +76,8 @@ model Event {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   imageUrl    String?
+  artistWallet String
+  isTicketTransferable Boolean @default(false)
 }
 
 model VerificationToken {
