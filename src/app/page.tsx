@@ -44,11 +44,9 @@ export default function Home() {
 
         <div className="w-full max-w-3xl mx-auto text-center text-gray-300 pb-12">
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
-            iaculis vitae neque a tristique. Suspendisse nec ipsum metus.
-            Maecenas dictum erat vel elit fermentum, at luctus lectus tempus.
-            Sed dolor ante, ullamcorper nec erat vitae, consectetur blandit
-            ligula
+            Say goodbye to scalpers and fraud—own your event experience with NFT
+            tickets. Secure, verifiable, and truly yours. Discover a new way to
+            book, sell, and resell event tickets with transparency and fairness.
           </p>
           <Button className="mt-6 bg-[#DEFF58] text-black font-semibold rounded-full py-3 px-6 gap-2 transition-all duration-300 hover:bg-[#f0ff85] hover:scale-105">
             Explore Shows
