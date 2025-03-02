@@ -78,6 +78,8 @@ model Event {
   imageUrl    String?
   artistWallet String
   isTicketTransferable Boolean @default(false)
+  managerPDA String
+  eventPublicKey String
 }
 
 model VerificationToken {

@@ -51,6 +51,10 @@ const WalletMultiButton = dynamic(
 );
 import { useWallet } from "@solana/wallet-adapter-react";
 import "@solana/wallet-adapter-react-ui/styles.css";
+import {
+  useProgram,
+  setupManagerAndCreateEvent,
+} from "@/app/lib/solana/instructions";
 
 type FormValues = z.infer<typeof formSchema>;
 export default function CreateEventForm() {
@@ -58,7 +62,7 @@ export default function CreateEventForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-
+  const { program, provider } = useProgram();
   const { connected, publicKey } = useWallet();
 
   const createEvent = api.event.create.useMutation({
@@ -91,9 +95,11 @@ export default function CreateEventForm() {
       city: "",
       capacity: 100,
       description: "",
-      eventImage: undefined,
+      imageUrl: undefined,
       artistWallet: "",
       isTicketTransferable: false,
+      managerPDA: "",
+      eventPublicKey: "",
     },
   });
 
@@ -147,31 +153,149 @@ export default function CreateEventForm() {
       return;
     }
 
+    // Make sure program and provider are available
+    if (!program || !provider) {
+      toast.error("Wallet Connection Error", {
+        description: "Could not connect to blockchain. Please try again.",
+        duration: 5000,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
+    let imageUrl = data.imageUrl;
 
     try {
-      let imageUrl = ""; // Changed from eventImageUrl to imageUrl
+      // Handle image upload...
 
-      if (data.eventImage instanceof File) {
-        imageUrl = await uploadImage(data.eventImage);
-        if (!imageUrl) {
-          setIsSubmitting(false);
-          return;
-        }
-      }
+      // Step 2: Call blockchain function to set up manager and create event
+      toast.loading("Creating event on blockchain...");
 
-      const formattedData = {
-        ...data,
-        imageUrl,
-        artistWallet: publicKey.toString(),
+      // Format event data for blockchain
+      const eventDate = data.eventDate;
+      const dateString = eventDate.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+      const timeString = eventDate.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }); // Format: HH:MM
+
+      // Prepare data for blockchain transaction
+      const eventArgs = {
+        name: data.eventName,
+        category: data.category,
+        uri: imageUrl?.toString() || "",
+        city: data.city,
+        venue: data.venue,
+        artist: publicKey.toString(),
+        date: dateString,
+        time: timeString,
+        capacity: data.capacity,
+        isTicketTransferable: data.isTicketTransferable,
       };
 
-      createEvent.mutate(formattedData);
-    } catch (error) {
-      console.error("Error creating event:", error);
+      let blockchainResult;
+      try {
+        // Check connection to Solana network before proceeding
+        // try {
+        //   const testConnection = await provider.connection.getLatestBlockhash(
+        //     "confirmed"
+        //   );
+        //   console.log("Network connection test successful");
+        // } catch (connError: unknown) {
+        //   toast.dismiss();
+        //   toast.error("Network Connection Error", {
+        //     description:
+        //       "Could not connect to Solana network. Please check your internet connection and try again.",
+        //     duration: 5000,
+        //   });
+        //   console.error("Network connection test failed:", connError);
+        //   setIsSubmitting(false);
+        //   return;
+        // }
+
+        blockchainResult = await setupManagerAndCreateEvent(
+          publicKey,
+          eventArgs,
+          { program, provider }
+        );
+
+        if (!blockchainResult || !blockchainResult.success) {
+          console.error("Transaction failed:", blockchainResult);
+          throw new Error("transaction failed");
+        }
+
+        toast.dismiss();
+        toast.success("Event created on blockchain", {
+          description: "Your event was successfully created on-chain",
+          duration: 3000,
+          className: "bg-[#1a1d2d] border-green-500 text-white",
+        });
+      } catch (error: unknown) {
+        toast.dismiss();
+
+        // Properly handle unknown error type
+        const err = error as Error;
+
+        // Provide more specific error messages based on error type
+        let errorDescription = "Failed to create event on the blockchain";
+        if (err.message?.includes("failed to get recent blockhash")) {
+          errorDescription =
+            "Network connection issue. Please check your internet connection and try again.";
+        } else if (err.message?.includes("insufficient funds")) {
+          errorDescription =
+            "Your wallet has insufficient funds for this transaction.";
+        } else if (err.message?.includes("Connection to Solana failed")) {
+          errorDescription =
+            "Cannot connect to Solana network. Please try again later.";
+        }
+
+        toast.error("Blockchain Error", {
+          description: errorDescription,
+          duration: 5000,
+        });
+        console.error("Blockchain error details:", err);
+        setIsSubmitting(false);
+        return;
+      }
+      // Step 3: Save to database with blockchain references
+      try {
+        // Make sure we have all required blockchain data before proceeding
+        if (
+          !blockchainResult.managerPda ||
+          !blockchainResult.eventPublicKey ||
+          !blockchainResult.signature
+        ) {
+          throw new Error("Missing blockchain references");
+        }
+
+        // Format data for database with blockchain references
+        const formattedData = {
+          ...data,
+          imageUrl,
+          artistWallet: publicKey.toString(),
+          managerPDA: blockchainResult.managerPda.toString(),
+          eventPublicKey: blockchainResult.eventPublicKey.toString(),
+          transactionSignature: blockchainResult.signature,
+        };
+
+        // Send to your database
+        createEvent.mutate(formattedData);
+        // Note: Success handling is in the createEvent.onSuccess callback
+      } catch (error: unknown) {
+        const err = error as Error;
+        console.error("Error creating event:", err);
+        setIsSubmitting(false);
+        toast.error("Something went wrong", {
+          description: "Failed to save your event details",
+          duration: 5000,
+        });
+      }
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Unexpected error in event creation:", err);
       setIsSubmitting(false);
-      toast.error("Something went wrong", {
-        description: "Failed to create your event",
+      toast.error("Error Creating Event", {
+        description: "An unexpected error occurred",
         duration: 5000,
       });
     }
@@ -390,7 +514,7 @@ export default function CreateEventForm() {
 
               <FormField
                 control={form.control}
-                name="eventImage"
+                name="imageUrl"
                 render={({ field: { value, onChange, ...field } }) => (
                   <FormItem>
                     <FormLabel className="text-gray-200 text-sm font-medium">
@@ -409,7 +533,7 @@ export default function CreateEventForm() {
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            id="eventImage"
+                            id="imageUrl"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file && file.size > 5 * 1024 * 1024) {
@@ -425,7 +549,7 @@ export default function CreateEventForm() {
                             {...field}
                           />
                           <label
-                            htmlFor="eventImage"
+                            htmlFor="imageUrl"
                             className={`flex flex-col items-center gap-2 ${
                               connected
                                 ? "cursor-pointer"

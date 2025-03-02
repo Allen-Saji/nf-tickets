@@ -40,7 +40,9 @@ export const formSchema = z.object({
     message: "Capacity must be a positive number.",
   }),
   description: z.string().optional(),
-  eventImage: z.any().optional(),
+  imageUrl: z.any().optional(),
   artistWallet: z.string(),
   isTicketTransferable: z.boolean().default(false),
+  managerPDA: z.string(),
+  eventPublicKey: z.string(),
 });

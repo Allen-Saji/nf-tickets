@@ -102,7 +102,9 @@ export const eventRouter = createTRPCRouter({
         description: z.string().optional(),
         imageUrl: z.string().url().optional(),
         artistWallet: z.string(),
+        managerPDA: z.string(),
         isTicketTransferable: z.boolean().default(false),
+        eventPublicKey: z.string(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -126,14 +128,15 @@ export const eventRouter = createTRPCRouter({
       }
 
       // Extract the fields that don't match the schema
-      const { artistWallet, ...restInput } = input;
+      const { artistWallet, managerPDA, ...restInput } = input;
 
       // Create the event with properly named fields
       const event = await ctx.db.event.create({
         data: {
           ...restInput,
           artistId: artistProfile.id,
-          artistWallet, // Add this field explicitly
+          artistWallet,
+          managerPDA,
         },
       });
       return event;
@@ -153,7 +156,9 @@ export const eventRouter = createTRPCRouter({
         description: z.string().optional(),
         imageUrl: z.string().url().optional(),
         artistWallet: z.string().optional(),
+        managerPDA: z.string().optional(),
         isTicketTransferable: z.boolean().optional(),
+        eventPublicKey: z.string(),
       })
     )
     .mutation(async ({ ctx, input }) => {
