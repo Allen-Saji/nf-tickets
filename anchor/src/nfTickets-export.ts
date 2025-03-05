@@ -6,7 +6,6 @@ import type { NfTickets } from "../target/types/nf_tickets";
 
 // Re-export the generated IDL and type
 export { NfTickets, IDL };
-
 // The programId is imported from the program IDL.
 export const PROGRAM_ID = new PublicKey(IDL.address);
 
@@ -27,7 +26,7 @@ export function getProgramId(cluster: Cluster) {
     case "devnet":
     case "testnet":
       // This is the program ID for the  program on devnet and testnet.
-      return new PublicKey("CqBh8BryDFbeG8i2gzJDvNS81hiJ96jYtSW3qPk1pt6V");
+      return new PublicKey("Vw6q8hdnGaQpk7StB4qRcbYUiTr52w1vqjfmTMFhac");
     case "mainnet-beta":
     default:
       return PROGRAM_ID;
