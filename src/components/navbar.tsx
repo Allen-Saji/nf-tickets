@@ -3,10 +3,11 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, Menu, ChevronDown } from "lucide-react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { ShimmerButton } from "./magicui/shimmer-button";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Sheet,
   SheetContent,
@@ -41,6 +42,17 @@ const Navbar = () => {
 
     return () => clearInterval(intervalId);
   }, []);
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!session?.user?.name) return "U";
+    return session.user.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
   return (
     <nav className="sticky top-0 left-0 w-full z-50 bg-black/80 backdrop-blur-lg">
@@ -94,14 +106,15 @@ const Navbar = () => {
                       variant="ghost"
                       className="p-2 h-auto flex items-center gap-2 hover:bg-gray-800 rounded-lg"
                     >
-                      <div className="relative w-10 h-10 sm:w-12 sm:h-12">
-                        <Image
+                      <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-gray-700">
+                        <AvatarImage
                           src={session.user.image || "/default-avatar.png"}
-                          alt="User Avatar"
-                          fill
-                          className="rounded-full object-cover"
+                          alt={session.user.name || "User"}
                         />
-                      </div>
+                        <AvatarFallback className="bg-gray-800 text-white text-lg">
+                          {getUserInitials()}
+                        </AvatarFallback>
+                      </Avatar>
                       <span className="ml-2 text-lg font-medium text-white hidden sm:inline max-w-[120px] truncate">
                         {session.user.name}
                       </span>
@@ -147,12 +160,11 @@ const Navbar = () => {
                 </DropdownMenu>
               </div>
             ) : (
-              <ShimmerButton
-                onClick={() => signIn("google")}
-                className="h-12 px-6 py-3 text-lg font-semibold hover:text-[#DEFF58]"
-              >
-                Login
-              </ShimmerButton>
+              <Link href="/signup">
+                <ShimmerButton className="h-12 px-6 py-3 text-lg font-semibold hover:text-[#DEFF58]">
+                  signup
+                </ShimmerButton>
+              </Link>
             )}
 
             <Sheet>
