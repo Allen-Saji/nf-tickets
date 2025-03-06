@@ -14,11 +14,11 @@ address = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
 
 [programs.localnet]
 #nf_tickets = "FiTx6nFmuJnP7AX63RrXHWKZRDZL6FYTDFX1EQ61Ajvz"
-nf_tickets = "5qCfMhUmbJmau9SGHP1qAEMfKwEzyyyQ846SMXX2y6w"
+nf_tickets = "1Vw6q8hdnGaQpk7StB4qRcbYUiTr52w1vqjfmTMFhac"
 
 
 [programs.devnet]
-nf_tickets = "5qCfMhUmbJmau9SGHP1qAEMfKwEzyyyQ846SMXX2y6w"
+nf_tickets = "1Vw6q8hdnGaQpk7StB4qRcbYUiTr52w1vqjfmTMFhac"
 
 # [programs.mainnet]
 # nf_tickets = "FiTx6nFmuJnP7AX63RrXHWKZRDZL6FYTDFX1EQ61Ajvz"
@@ -27,8 +27,8 @@ nf_tickets = "5qCfMhUmbJmau9SGHP1qAEMfKwEzyyyQ846SMXX2y6w"
 url = "https://api.apr.dev"
 
 [provider]
-# cluster = "Devnet"
-cluster = "Localnet"
+ cluster = "Devnet"
+# cluster = "Localnet"
 # wallet = "/home/allen/Q3T_Sol_Allen_Saji/nf-tickets/target/deploy/final_keypair.json"
 wallet = "~/.config/solana/id.json"
 

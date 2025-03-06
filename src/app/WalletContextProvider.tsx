@@ -9,7 +9,7 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
 require("@solana/wallet-adapter-react-ui/styles.css"); // Wallet styles
 
 const WalletContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  const network = "http://localhost:8899";
+  const network = "https://api.devnet.solana.com";
 
   // Initialize Solana wallet (e.g., Phantom)
   const wallets = [new PhantomWalletAdapter()];
