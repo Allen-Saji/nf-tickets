@@ -62,8 +62,8 @@ export default function CreateEventForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const { program, provider } = useProgram();
   const { connected, publicKey } = useWallet();
+  const { program, provider } = useProgram();
 
   const createEvent = api.event.create.useMutation({
     onSuccess: () => {
@@ -163,13 +163,20 @@ export default function CreateEventForm() {
     }
 
     setIsSubmitting(true);
-    let imageUrl = data.imageUrl;
 
     try {
-      // Handle image upload...
+      let imageUrl = "";
+
+      if (data.imageUrl instanceof File) {
+        imageUrl = await uploadImage(data.imageUrl);
+        if (!imageUrl) {
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
       // Step 2: Call blockchain function to set up manager and create event
-      toast.loading("Creating event on blockchain...");
+      toast.loading("Creating event ...");
 
       // Format event data for blockchain
       const eventDate = data.eventDate;
@@ -193,40 +200,23 @@ export default function CreateEventForm() {
         isTicketTransferable: data.isTicketTransferable,
       };
 
-      let blockchainResult;
+      let result;
       try {
-        // Check connection to Solana network before proceeding
-        // try {
-        //   const testConnection = await provider.connection.getLatestBlockhash(
-        //     "confirmed"
-        //   );
-        //   console.log("Network connection test successful");
-        // } catch (connError: unknown) {
-        //   toast.dismiss();
-        //   toast.error("Network Connection Error", {
-        //     description:
-        //       "Could not connect to Solana network. Please check your internet connection and try again.",
-        //     duration: 5000,
-        //   });
-        //   console.error("Network connection test failed:", connError);
-        //   setIsSubmitting(false);
-        //   return;
-        // }
-
-        blockchainResult = await setupManagerAndCreateEvent(
+        result = await setupManagerAndCreateEvent(
           publicKey,
           eventArgs,
-          { program, provider }
+          program,
+          provider
         );
 
-        if (!blockchainResult || !blockchainResult.success) {
-          console.error("Transaction failed:", blockchainResult);
+        if (!result || !result.success) {
+          console.error("Transaction failed:", result);
           throw new Error("transaction failed");
         }
 
         toast.dismiss();
-        toast.success("Event created on blockchain", {
-          description: "Your event was successfully created on-chain",
+        toast.success("Success", {
+          description: "Your event was successfully created ",
           duration: 3000,
           className: "bg-[#1a1d2d] border-green-500 text-white",
         });
@@ -237,7 +227,7 @@ export default function CreateEventForm() {
         const err = error as Error;
 
         // Provide more specific error messages based on error type
-        let errorDescription = "Failed to create event on the blockchain";
+        let errorDescription = "Failed to create event";
         if (err.message?.includes("failed to get recent blockhash")) {
           errorDescription =
             "Network connection issue. Please check your internet connection and try again.";
@@ -260,11 +250,7 @@ export default function CreateEventForm() {
       // Step 3: Save to database with blockchain references
       try {
         // Make sure we have all required blockchain data before proceeding
-        if (
-          !blockchainResult.managerPda ||
-          !blockchainResult.eventPublicKey ||
-          !blockchainResult.signature
-        ) {
+        if (!result.managerPda || !result.eventPublicKey || !result.signature) {
           throw new Error("Missing blockchain references");
         }
 
@@ -273,9 +259,9 @@ export default function CreateEventForm() {
           ...data,
           imageUrl,
           artistWallet: publicKey.toString(),
-          managerPDA: blockchainResult.managerPda.toString(),
-          eventPublicKey: blockchainResult.eventPublicKey.toString(),
-          transactionSignature: blockchainResult.signature,
+          managerPDA: result.managerPda.toString(),
+          eventPublicKey: result.eventPublicKey.toString(),
+          transactionSignature: result.signature,
         };
 
         // Send to your database
@@ -683,7 +669,7 @@ export default function CreateEventForm() {
       </Card>
 
       <Particles
-        className="absolute inset-0 z-0"
+        className="z-0 h-full w-full absolute top-0 left-0"
         quantity={300}
         ease={80}
         color={"#DEFF58"}
