@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
-import { ArrowRight, Upload, Loader2 } from "lucide-react";
+import { ArrowRight, Upload, Loader2, Lock } from "lucide-react";
 import { Particles } from "@/components/magicui/particles";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -28,8 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { signIn } from "next-auth/react";
 
-// Define genre enum
 enum Genre {
   Music = "Music",
   Comedy = "Comedy",
@@ -38,16 +38,29 @@ enum Genre {
   Sports = "Sports",
 }
 
-// Define the form validation schema
-const ArtistProfileSchema = z.object({
-  artistName: z.string().min(1, "Artist name is required"),
-  bio: z.string().optional(),
-  genre: z.nativeEnum(Genre, {
-    required_error: "Please select a genre",
-  }),
-  profilePicture: z.any().optional(),
-  backgroundImage: z.any().optional(),
-});
+const ArtistProfileSchema = z
+  .object({
+    email: z.string().email("Valid email is required"),
+    artistName: z.string().min(1, "Artist name is required"),
+    bio: z.string().optional(),
+    genre: z.nativeEnum(Genre, {
+      required_error: "Please select a genre",
+    }),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+      ),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+    profilePicture: z.any().optional(),
+    backgroundImage: z.any().optional(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type ArtistProfileFormData = z.infer<typeof ArtistProfileSchema>;
 
@@ -63,16 +76,19 @@ export default function CreateArtistProfileForm() {
   const form = useForm<ArtistProfileFormData>({
     resolver: zodResolver(ArtistProfileSchema),
     defaultValues: {
+      email: "",
       artistName: "",
       bio: "",
       genre: undefined,
+      password: "",
+      confirmPassword: "",
       profilePicture: undefined,
       backgroundImage: undefined,
     },
   });
 
   // Use the tRPC mutation
-  const createProfile = api.artist.create.useMutation({
+  const createProfile = api.artist.signup.useMutation({
     onSuccess: () => {
       toast.success("Profile Created", {
         description: "Your artist profile has been created successfully.",
@@ -153,6 +169,11 @@ export default function CreateArtistProfileForm() {
       }
 
       const formattedData = {
+        // User data
+        name: data.artistName,
+        email: data.email,
+        password: data.password,
+        // Artist profile data
         artistName: data.artistName,
         bio: data.bio || "",
         genre: data.genre,
@@ -161,6 +182,15 @@ export default function CreateArtistProfileForm() {
       };
 
       await createProfile.mutateAsync(formattedData);
+      await signIn(
+        "credentials",
+        {
+          redirect: false,
+          email: data.email,
+          password: data.password,
+        },
+        { callbackUrl: "/" }
+      );
     } catch (error) {
       console.error("Error creating artist profile:", error);
       toast.error("Something went wrong", {
@@ -170,13 +200,26 @@ export default function CreateArtistProfileForm() {
     }
   };
 
+  const handleGoBack = () => {
+    router.refresh();
+  };
+
   return (
     <div className="flex items-center justify-center bg-black text-white min-h-screen overflow-hidden">
       <Card className="w-full max-w-xl bg-[#10121f] border border-gray-800 rounded-lg shadow-xl z-10">
         <CardContent className="pt-6 pb-8">
-          <h1 className="text-2xl font-bold mb-6">
-            Create <span className="text-[#DEFF58]">Artist Profile</span>
-          </h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold">
+              <span className="text-[#DEFF58]">Artist</span> Signup
+            </h1>
+            <Button
+              variant="ghost"
+              onClick={handleGoBack}
+              className="text-gray-400 hover:text-white"
+            >
+              Back
+            </Button>
+          </div>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -191,6 +234,27 @@ export default function CreateArtistProfileForm() {
                     <FormControl>
                       <Input
                         placeholder="Your stage name or performance identity"
+                        {...field}
+                        className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-400" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-200 text-sm font-medium">
+                      Email
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Your email address"
+                        type="email"
                         {...field}
                         className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
                       />
@@ -229,6 +293,58 @@ export default function CreateArtistProfileForm() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage className="text-red-400" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-200 text-sm font-medium">
+                      Password
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                        <Input
+                          placeholder="••••••••"
+                          type="password"
+                          {...field}
+                          className="bg-[#1a1d2d] border-gray-700 h-10 pl-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-red-400" />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Password must be at least 8 characters and include
+                      uppercase, lowercase and numbers
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-200 text-sm font-medium">
+                      Confirm Password
+                    </FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                        <Input
+                          placeholder="••••••••"
+                          type="password"
+                          {...field}
+                          className="bg-[#1a1d2d] border-gray-700 h-10 pl-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
+                        />
+                      </div>
+                    </FormControl>
                     <FormMessage className="text-red-400" />
                   </FormItem>
                 )}
