@@ -45,6 +45,7 @@ model User {
   artistProfile ArtistProfile? 
   accounts      Account[]
   sessions      Session[]
+  password     String?
 }
 
 model ArtistProfile {
