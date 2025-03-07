@@ -51,14 +51,25 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async session({ session, token }: { session: Session; token: JWT }) {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-          role: token.role,
-        },
+      // First, set the basic user information
+      session.user = {
+        ...session.user,
+        id: token.id,
+        role: token.role,
       };
+
+      // If the user is an ARTIST, fetch and include their artist profile
+      if (token.role === "ARTIST" && token.id) {
+        const artistProfile = await db.artistProfile.findUnique({
+          where: { userId: token.id as string },
+        });
+
+        if (artistProfile) {
+          session.user.artistProfile = artistProfile;
+        }
+      }
+
+      return session;
     },
     async jwt({ token, user }: { token: JWT; user?: any }) {
       if (user) {

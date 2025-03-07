@@ -108,7 +108,12 @@ const Navbar = () => {
                     >
                       <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-gray-700">
                         <AvatarImage
-                          src={session.user.image || "/default-avatar.png"}
+                          src={
+                            session.user.role === "ARTIST" &&
+                            session.user.artistProfile?.profilePictureUrl
+                              ? session.user.artistProfile.profilePictureUrl
+                              : session.user.image || "/default-avatar.png"
+                          }
                           alt={session.user.name || "User"}
                         />
                         <AvatarFallback className="bg-gray-800 text-white text-lg">
