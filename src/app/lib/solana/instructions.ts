@@ -34,15 +34,33 @@ export async function setupManagerAndCreateEvent(
   );
 
   try {
-    // Build the setup manager instruction
-    const setupManagerIx = await program.methods
-      .setupManager()
-      .accountsPartial({
-        signer: manager,
-        payer: manager,
-        manager: managerPda,
-      })
-      .instruction();
+    // Check if manager account already exists
+    const managerExists = await provider.connection
+      .getAccountInfo(managerPda)
+      .then((accountInfo) => !!accountInfo)
+      .catch(() => false);
+
+    // Create transaction
+    const transaction = new Transaction();
+
+    // Only add the setupManager instruction if the manager doesn't exist
+    if (!managerExists) {
+      const setupManagerIx = await program.methods
+        .setupManager()
+        .accountsPartial({
+          signer: manager,
+          payer: manager,
+          manager: managerPda,
+        })
+        .instruction();
+
+      transaction.add(setupManagerIx);
+      console.log(
+        "Adding manager setup instruction - manager doesn't exist yet"
+      );
+    } else {
+      console.log("Manager already exists, skipping setup");
+    }
 
     // Build the create event instruction
     const createEventIx = await program.methods
@@ -58,8 +76,8 @@ export async function setupManagerAndCreateEvent(
       })
       .instruction();
 
-    // Create a transaction with both instructions
-    const transaction = new Transaction().add(setupManagerIx, createEventIx);
+    // Add create event instruction to transaction
+    transaction.add(createEventIx);
 
     // Sign and send the transaction
     const signature = await provider.sendAndConfirm(transaction, [
@@ -67,17 +85,21 @@ export async function setupManagerAndCreateEvent(
     ]);
 
     console.log(
-      "Manager setup and event created in one transaction:",
+      `Event created successfully${
+        !managerExists ? " with new manager setup" : ""
+      }:`,
       signature
     );
+
     return {
       success: true,
       signature,
       managerPda,
       eventPublicKey: eventKeypair.publicKey,
+      managerSetup: !managerExists, // Flag indicating if manager was set up in this transaction
     };
   } catch (error) {
-    console.error("Error in combined transaction:", error);
+    console.error("Error in transaction:", error);
     return { success: false, error };
   }
 }
