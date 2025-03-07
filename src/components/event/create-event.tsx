@@ -72,7 +72,7 @@ export default function CreateEventForm() {
         duration: 5000,
         className: "bg-[#1a1d2d] border-green-500 text-white",
       });
-      router.push("/dashboard/events");
+      router.push("/events");
     },
     onError: (error) => {
       setIsSubmitting(false);
