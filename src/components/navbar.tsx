@@ -126,33 +126,12 @@ const Navbar = () => {
                     sideOffset={5}
                     className="bg-gray-900 border border-gray-800 text-white p-2 rounded-lg w-[200px] max-w-[95vw] fixed"
                   >
-                    {session.user.role === "ARTIST" ? (
-                      <DropdownMenuItem className="px-0 py-0 focus:bg-transparent">
-                        <Link
-                          href="/artist/profile"
-                          className="w-full px-2 py-2 block cursor-pointer hover:bg-gray-800 rounded-md"
-                          onClick={() => setOpen(false)}
-                        >
-                          Switch to Artist Profile
-                        </Link>
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem className="px-0 py-0 focus:bg-transparent">
-                        <Link
-                          href="/artist/create"
-                          className="w-full px-4 py-2 block cursor-pointer hover:bg-gray-800 rounded-md"
-                          onClick={() => setOpen(false)}
-                        >
-                          Create Artist Profile
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuItem
                       onClick={() => {
                         setOpen(false);
                         signOut({ callbackUrl: "/" });
                       }}
-                      className="w-full px-4 py-2 mt-1 cursor-pointer hover:bg-gray-800 rounded-md text-red-400 focus:bg-gray-800 focus:text-red-400"
+                      className="w-full px-4 py-2 cursor-pointer hover:bg-gray-800 rounded-md text-red-400 focus:bg-gray-800 focus:text-red-400"
                     >
                       Logout
                     </DropdownMenuItem>
