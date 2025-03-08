@@ -74,7 +74,7 @@ const CategoryCard = ({
           src={category.image}
           alt={category.title}
           fill
-          className={`object-cover object-center transition-transform duration-500 ease-in-out ${
+          className={`object-contain transition-transform duration-500 ease-in-out ${
             isHovered ? "scale-105" : "scale-100"
           }`}
           priority

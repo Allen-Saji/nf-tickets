@@ -176,7 +176,7 @@ export default function EventCarousel({
           src={currentEvent.imageUrl || "/images/default-event.jpg"}
           alt={currentEvent.eventName}
           fill
-          className="object-cover object-top"
+          className="object-contain"
           priority
         />
         <div className="absolute inset-0 bg-black/40" />

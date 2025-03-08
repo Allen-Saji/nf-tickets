@@ -115,6 +115,7 @@ const Navbar = () => {
                               : session.user.image || "/default-avatar.png"
                           }
                           alt={session.user.name || "User"}
+                          className="object-cover object-top"
                         />
                         <AvatarFallback className="bg-gray-800 text-white text-lg">
                           {getUserInitials()}
