@@ -81,6 +81,9 @@ model Event {
   isTicketTransferable Boolean @default(false)
   managerPDA String
   eventPublicKey String
+  ticketPrice Float
+  ticketsRemaining Int
+  venueAuthority String @default("HLgXScitaoBUU3S9DhqBSHSXuHzgDX3kdSVJ2YzsS6HR")
 }
 
 model VerificationToken {

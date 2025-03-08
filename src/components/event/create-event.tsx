@@ -100,8 +100,21 @@ export default function CreateEventForm() {
       isTicketTransferable: false,
       managerPDA: "",
       eventPublicKey: "",
+      ticketPrice: 0,
+      venueAuthority: "HLgXScitaoBUU3S9DhqBSHSXuHzgDX3kdSVJ2YzsS6HR",
+      ticketsRemaining: 100, // Default to same as capacity
     },
   });
+
+  // Update ticketsRemaining whenever capacity changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "capacity") {
+        form.setValue("ticketsRemaining", value.capacity || 100);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   useEffect(() => {
     if (connected && publicKey) {
@@ -198,6 +211,8 @@ export default function CreateEventForm() {
         time: timeString,
         capacity: data.capacity,
         isTicketTransferable: data.isTicketTransferable,
+        ticketPrice: data.ticketPrice,
+        venueAuthority: data.venueAuthority,
       };
 
       let result;
@@ -261,7 +276,7 @@ export default function CreateEventForm() {
           artistWallet: publicKey.toString(),
           managerPDA: result.managerPda.toString(),
           eventPublicKey: result.eventPublicKey.toString(),
-          transactionSignature: result.signature,
+          ticketsRemaining: data.capacity,
         };
 
         // Send to your database
@@ -324,6 +339,7 @@ export default function CreateEventForm() {
                 {...form.register("artistWallet")}
                 value={publicKey?.toString() || ""}
               />
+              <input type="hidden" {...form.register("ticketsRemaining")} />
               <FormField
                 control={form.control}
                 name="eventName"
@@ -472,26 +488,92 @@ export default function CreateEventForm() {
                 />
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <FormField
+                  control={form.control}
+                  name="capacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-200 text-sm font-medium">
+                        Capacity
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder="Enter event capacity"
+                          {...field}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 100;
+                            field.onChange(value);
+                            // Update ticketsRemaining to match capacity
+                            form.setValue("ticketsRemaining", value);
+                          }}
+                          className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
+                          disabled={!connected}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs text-gray-400">
+                        Maximum number of attendees allowed
+                      </FormDescription>
+                      <FormMessage className="text-red-400" />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="ticketPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-200 text-sm font-medium">
+                        Ticket Price (SOL)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.0001"
+                          placeholder="Enter ticket price"
+                          {...field}
+                          onChange={(e) => {
+                            // Convert string to float to handle decimal values
+                            const value =
+                              e.target.value === ""
+                                ? 0
+                                : parseFloat(e.target.value);
+                            field.onChange(value);
+                          }}
+                          className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
+                          disabled={!connected}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs text-gray-400">
+                        Set the price for each ticket
+                      </FormDescription>
+                      <FormMessage className="text-red-400" />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="capacity"
+                name="venueAuthority"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-gray-200 text-sm font-medium">
-                      Capacity
+                      Venue Authority
                     </FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min="1"
-                        placeholder="Enter event capacity"
                         {...field}
-                        className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm"
+                        className="bg-[#1a1d2d] border-gray-700 h-10 rounded-md focus:border-[#DEFF58] focus:ring-[#DEFF58] text-white placeholder:text-gray-500 text-sm font-mono"
                         disabled={!connected}
                       />
                     </FormControl>
                     <FormDescription className="text-xs text-gray-400">
-                      Maximum number of attendees allowed
+                      Venue authority wallet address (pre-filled)
                     </FormDescription>
                     <FormMessage className="text-red-400" />
                   </FormItem>

@@ -45,4 +45,9 @@ export const formSchema = z.object({
   isTicketTransferable: z.boolean().default(false),
   managerPDA: z.string(),
   eventPublicKey: z.string(),
+  ticketPrice: z.number().min(0),
+  ticketsRemaining: z.number().int().positive(),
+  venueAuthority: z
+    .string()
+    .default("HLgXScitaoBUU3S9DhqBSHSXuHzgDX3kdSVJ2YzsS6HR"),
 });

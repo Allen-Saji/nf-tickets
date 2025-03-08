@@ -105,6 +105,11 @@ export const eventRouter = createTRPCRouter({
         managerPDA: z.string(),
         isTicketTransferable: z.boolean().default(false),
         eventPublicKey: z.string(),
+        ticketPrice: z.number().min(0),
+        ticketsRemaining: z.number().int().positive(),
+        venueAuthority: z
+          .string()
+          .default("HLgXScitaoBUU3S9DhqBSHSXuHzgDX3kdSVJ2YzsS6HR"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -128,12 +133,14 @@ export const eventRouter = createTRPCRouter({
       }
 
       // Extract the fields that don't match the schema
-      const { artistWallet, managerPDA, ...restInput } = input;
+      const { artistWallet, managerPDA, capacity, ...restInput } = input;
 
-      // Create the event with properly named fields
+      // Create the event with properly named fields and initialize ticketsRemaining equal to capacity
       const event = await ctx.db.event.create({
         data: {
           ...restInput,
+          capacity,
+          ticketsRemaining: capacity,
           artistId: artistProfile.id,
           artistWallet,
           managerPDA,
@@ -159,10 +166,13 @@ export const eventRouter = createTRPCRouter({
         managerPDA: z.string().optional(),
         isTicketTransferable: z.boolean().optional(),
         eventPublicKey: z.string(),
+        ticketPrice: z.number().min(0).optional(),
+        ticketsRemaining: z.number().int().optional(),
+        venueAuthority: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...updateData } = input;
+      const { id, capacity, ticketsRemaining, ...updateData } = input;
       const { user } = ctx.session;
 
       // Fetch the event to check permissions
@@ -192,10 +202,36 @@ export const eventRouter = createTRPCRouter({
         });
       }
 
+      // If capacity is updated and it's greater than the current capacity,
+      // increase ticketsRemaining by the difference
+      let ticketsData = {};
+      if (capacity && capacity > event.capacity) {
+        const difference = capacity - event.capacity;
+        ticketsData = {
+          ticketsRemaining: event.ticketsRemaining + difference,
+        };
+      } else if (capacity && capacity < event.capacity) {
+        // If reducing capacity, ensure ticketsRemaining doesn't exceed new capacity
+        ticketsData = {
+          ticketsRemaining: Math.min(event.ticketsRemaining, capacity),
+        };
+      }
+
+      // If ticketsRemaining is explicitly provided, use that value
+      if (ticketsRemaining !== undefined) {
+        ticketsData = {
+          ticketsRemaining,
+        };
+      }
+
       // Update the event
       const updatedEvent = await ctx.db.event.update({
         where: { id },
-        data: updateData,
+        data: {
+          ...updateData,
+          ...(capacity ? { capacity } : {}),
+          ...ticketsData,
+        },
       });
 
       return updatedEvent;
@@ -352,5 +388,47 @@ export const eventRouter = createTRPCRouter({
       });
 
       return events;
+    }),
+
+  // New procedure for updating ticketsRemaining when tickets are purchased
+  updateTicketCount: protectedProcedure
+    .input(
+      z.object({
+        eventId: z.number(),
+        ticketsPurchased: z.number().int().positive(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { eventId, ticketsPurchased } = input;
+
+      // Get the current event
+      const event = await ctx.db.event.findUnique({
+        where: { id: eventId },
+      });
+
+      if (!event) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Event not found",
+        });
+      }
+
+      // Check if there are enough tickets remaining
+      if (event.ticketsRemaining < ticketsPurchased) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Not enough tickets available",
+        });
+      }
+
+      // Update the ticketsRemaining count
+      const updatedEvent = await ctx.db.event.update({
+        where: { id: eventId },
+        data: {
+          ticketsRemaining: event.ticketsRemaining - ticketsPurchased,
+        },
+      });
+
+      return updatedEvent;
     }),
 });
