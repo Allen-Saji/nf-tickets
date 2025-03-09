@@ -76,6 +76,7 @@ export const eventRouter = createTRPCRouter({
               },
             },
           },
+          tickets: true, // Include tickets for the event
         },
       });
 
@@ -270,6 +271,11 @@ export const eventRouter = createTRPCRouter({
           message: "You can only delete your own events",
         });
       }
+
+      // Delete all tickets for this event first
+      await ctx.db.ticket.deleteMany({
+        where: { eventId: id },
+      });
 
       // Delete the event
       await ctx.db.event.delete({

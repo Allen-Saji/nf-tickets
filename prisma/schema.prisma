@@ -64,26 +64,36 @@ model ArtistProfile {
 
 
 model Event {
-  id          Int        @id @default(autoincrement())
-  artistId    Int
-  artist      ArtistProfile @relation(fields: [artistId], references: [id])
-  eventName   String
-  eventDate   DateTime
-  venue       String
-  city        String
-  category    Category
-  capacity    Int
-  description String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  imageUrl    String?
-  artistWallet String
-  isTicketTransferable Boolean @default(false)
-  managerPDA String
-  eventPublicKey String
-  ticketPrice Float
-  ticketsRemaining Int
-  venueAuthority String @default("HLgXScitaoBUU3S9DhqBSHSXuHzgDX3kdSVJ2YzsS6HR")
+  id                  Int           @id @default(autoincrement())
+  artistId            Int
+  artist              ArtistProfile @relation(fields: [artistId], references: [id])
+  eventName           String
+  eventDate           DateTime
+  venue               String
+  city                String
+  category            Category
+  capacity            Int
+  description         String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  imageUrl            String?
+  artistWallet        String
+  isTicketTransferable Boolean      @default(false)
+  managerPDA          String
+  eventPublicKey      String
+  ticketPrice         Float
+  ticketsRemaining    Int
+  venueAuthority      String        @default("HLgXScitaoBUU3S9DhqBSHSXuHzgDX3kdSVJ2YzsS6HR")
+  tickets             Ticket[]      // Added this to make the relation bidirectional
+}
+
+model Ticket {
+  id             Int    @id @default(autoincrement())
+  ticketAddress  String @unique
+  ownerWallet    String
+  txnSignature   String
+  eventId        Int
+  event          Event  @relation(fields: [eventId], references: [id])
 }
 
 model VerificationToken {
