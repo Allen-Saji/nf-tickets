@@ -96,6 +96,20 @@ model Ticket {
   event          Event  @relation(fields: [eventId], references: [id])
 }
 
+model Platform {
+  id                String   @id @default(cuid())
+  platformName      String   @unique
+  programId         String
+  platformPda       String   @unique
+  rewardsMintPda    String   @unique
+  treasuryPda       String   @unique
+  adminWallet       String
+  fee               Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+
 model VerificationToken {
   identifier String
   token      String   @unique
