@@ -51,10 +51,8 @@ const WalletMultiButton = dynamic(
 );
 import { useWallet } from "@solana/wallet-adapter-react";
 import "@solana/wallet-adapter-react-ui/styles.css";
-import {
-  useProgram,
-  setupManagerAndCreateEvent,
-} from "@/app/lib/solana/instructions";
+import { setupManagerAndCreateEvent } from "@/app/lib/solana/instructions/event";
+import { useProgram } from "@/app/lib/solana/hooks/use-program";
 
 type FormValues = z.infer<typeof formSchema>;
 export default function CreateEventForm() {

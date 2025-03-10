@@ -2,6 +2,7 @@
 import EventCarousel from "@/components/event/event-carousel";
 import { api } from "@/trpc/server";
 import CategoriesGrid from "@/components/event/category-cards";
+import EventCardDeck from "@/components/event/card-deck";
 
 export default async function Events() {
   // Fetch events using the server-side API client
@@ -18,6 +19,7 @@ export default async function Events() {
     <div className="flex flex-col items-center justify-center">
       <EventCarousel events={events} />
       <CategoriesGrid />
+      <EventCardDeck />
     </div>
   );
 }
