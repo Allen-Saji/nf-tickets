@@ -1,5 +1,5 @@
 import { programId } from "../config";
-import { mplCore, MPL_CORE_PROGRAM_ID } from "@metaplex-foundation/mpl-core";
+import { MPL_CORE_PROGRAM_ID } from "@metaplex-foundation/mpl-core";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
 import { EventArgs } from "../types";
