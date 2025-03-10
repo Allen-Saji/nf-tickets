@@ -11,11 +11,55 @@ import {
   Share2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useProgram } from "@/app/lib/solana/hooks/use-program";
+import { mintTicket } from "@/app/lib/solana/instructions/ticket";
+import { toast } from "sonner";
+import { api } from "@/trpc/react";
+import { TicketArgs } from "@/types/types";
+import dynamic from "next/dynamic";
+const WalletMultiButton = dynamic(
+  async () =>
+    (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
+  { ssr: false }
+);
+import { useWallet } from "@solana/wallet-adapter-react";
+import "@solana/wallet-adapter-react-ui/styles.css";
+import Link from "next/link";
+
+interface TicketType {
+  id: number;
+  eventId: number;
+  ticketAddress: string;
+  ownerWallet: string;
+  txnSignature: string;
+}
 
 const EventDetails = ({ eventData, artistData }: any) => {
   const router = useRouter();
   const [showNFT, setShowNFT] = useState(false);
+  const { program, provider } = useProgram();
+  const { connected, publicKey } = useWallet();
+  const [isLoading, setIsLoading] = useState(false);
+  const [ticketData, setTicketData] = useState<TicketType | null>();
+
+  const createTicket = api.ticket.createTicket.useMutation({
+    onSuccess: () => {
+      toast.success("Ticket Booked", {
+        description: "Successfully booked ticket",
+        duration: 5000,
+        className: "bg-[#1a1d2d] border-green-500 text-white",
+      });
+      setShowNFT(true);
+    },
+
+    onError: (error) => {
+      toast.error("Error Booking Ticket", {
+        description: error.message || "Failed to book ticket",
+        duration: 5000,
+      });
+    },
+  });
 
   const formatDate = (date: string) => {
     const options: Intl.DateTimeFormatOptions = {
@@ -23,17 +67,104 @@ const EventDetails = ({ eventData, artistData }: any) => {
       year: "numeric",
       month: "long",
       day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
     };
     return new Date(date).toLocaleDateString("en-US", options);
   };
 
-  const handleBookTicket = () => {
-    // Implement booking functionality
-    setShowNFT(true);
-  };
+  const handleBookTicket = async () => {
+    if (!program || !provider || !connected) {
+      toast.error("Wallet Connection Error", {
+        description: "Please connect your wallet to book a ticket.",
+        duration: 5000,
+      });
+      return;
+    }
+    try {
+      // Show loading state
+      setIsLoading(true);
 
+      // 1. Mint the ticket on Solana blockchain
+      const ticketArgs: TicketArgs = {
+        name: eventData.eventName,
+        uri: eventData.imageUrl,
+        price: eventData.ticketPrice,
+        venueAuthority: eventData.venueAuthority,
+      };
+
+      const artistAddress = eventData.artistWallet;
+      const mintResult = await mintTicket(
+        artistAddress,
+        eventData.eventPublicKey,
+        ticketArgs,
+        program,
+        provider
+      );
+
+      // Check for success flag and required properties
+      if (
+        mintResult.success &&
+        mintResult.ticketPublicKey &&
+        mintResult.signature
+      ) {
+        // Transaction was successful and we have all required properties
+        const ticketPublicKey = mintResult.ticketPublicKey.toString();
+        const signature = mintResult.signature;
+
+        // Update your database
+        createTicket.mutate(
+          {
+            ticketAddress: ticketPublicKey,
+            ownerWallet: provider.wallet.publicKey.toString(),
+            txnSignature: signature,
+            eventId: eventData.id,
+          },
+          {
+            onSuccess: (data) => {
+              setTicketData(data);
+              // Show success toast
+              toast.success("Ticket booked successfully!", {
+                description: `Your ticket has been minted. Ticket address: ${ticketPublicKey.slice(
+                  0,
+                  8
+                )}...`,
+                duration: 5000,
+              });
+            },
+            onError: (error) => {
+              console.error("Database update error:", error);
+              // Show partial success notification
+              toast.warning("Ticket minted, but database update failed", {
+                description:
+                  "Your ticket was created on-chain, but we couldn't update our records. Please contact support with this signature: " +
+                  signature,
+                duration: 10000,
+              });
+            },
+          }
+        );
+      } else {
+        // Either transaction failed or we're missing required properties
+        throw new Error(
+          mintResult.error?.message ||
+            "Failed to mint ticket - missing ticket information"
+        );
+      }
+    } catch (error) {
+      console.error("Error booking ticket:", error);
+      // Show error notification
+      toast.error("Error booking ticket", {
+        description:
+          error instanceof Error ? error.message : "Failed to book ticket",
+        duration: 5000,
+        action: {
+          label: "Try Again",
+          onClick: () => handleBookTicket(),
+        },
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const handleArtistProfile = () => {
     // Navigate to artist profile
     router.push(`/artist/${artistData.id}`);
@@ -161,7 +292,7 @@ const EventDetails = ({ eventData, artistData }: any) => {
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Image
-                    src={eventData.imageUrl}
+                    src={eventData.imageUrl || "/default-ticket.jpg"}
                     alt="NFT Ticket QR Code"
                     fill
                     className="object-contain"
@@ -173,15 +304,26 @@ const EventDetails = ({ eventData, artistData }: any) => {
                 <>
                   <div className="flex items-center justify-between mb-6">
                     <span className="text-gray-300">Price</span>
-                    <span className="text-2xl font-bold">0.5 SOL</span>
+                    <span className="text-2xl font-bold">
+                      {eventData.ticketPrice} SOL
+                    </span>
                   </div>
+
+                  {/* Book Your Show button - only active when wallet is connected */}
                   <Button
-                    className="w-full bg-[#DEFF58] text-black font-semibold rounded-full py-6 gap-2 transition-all duration-300 hover:bg-[#f0ff85] hover:scale-105"
+                    className="w-full bg-[#DEFF58] text-black font-semibold rounded-full py-6 gap-2 transition-all duration-300 hover:bg-[#f0ff85] hover:scale-105 mb-4"
                     onClick={handleBookTicket}
+                    disabled={!connected || isLoading}
                   >
-                    Book Your Show
+                    {isLoading ? "Processing..." : "Book Your Show"}
                     <Ticket className="w-5 h-5" />
                   </Button>
+
+                  {/* Wallet connect button using the Solana wallet adapter */}
+                  <div className="wallet-adapter-wrapper mt-3 flex justify-center">
+                    <WalletMultiButton className="wallet-adapter-button wallet-adapter-button-trigger" />
+                  </div>
+
                   <p className="text-xs text-gray-400 mt-4 text-center">
                     By purchasing, you agree to our terms of service and NFT
                     ownership guidelines.
@@ -196,10 +338,15 @@ const EventDetails = ({ eventData, artistData }: any) => {
                     <Share2 className="w-4 h-4 mr-2" />
                     Share
                   </Button>
-                  <Button className="flex-1 bg-[#DEFF58] text-black font-semibold">
-                    View on Solana
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                  <Link
+                    target="_blank"
+                    href={`https://explorer.solana.com/tx/${ticketData?.txnSignature}?cluster=devnet`}
+                  >
+                    <Button className="flex-1 bg-[#DEFF58] text-black font-semibold hover:bg-[#f0ff85]">
+                      View on Solana
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
                 </div>
               )}
             </div>

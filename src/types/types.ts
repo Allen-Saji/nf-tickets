@@ -10,3 +10,13 @@ export interface EventArgs {
   capacity: number;
   isTicketTransferable: boolean;
 }
+
+export interface TicketArgs {
+  name: string;
+  uri: string | null | undefined;
+  price: number;
+  venueAuthority: string;
+  screen?: string;
+  row?: string;
+  seat?: string;
+}

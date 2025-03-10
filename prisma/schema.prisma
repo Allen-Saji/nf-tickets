@@ -76,7 +76,7 @@ model Event {
   description         String?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
-  imageUrl            String?
+  imageUrl            String
   artistWallet        String
   isTicketTransferable Boolean      @default(false)
   managerPDA          String

@@ -2,7 +2,7 @@ import { programId } from "../config";
 import { MPL_CORE_PROGRAM_ID } from "@metaplex-foundation/mpl-core";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import { PublicKey, Keypair, Transaction } from "@solana/web3.js";
-import { EventArgs } from "../types";
+import { EventArgs } from "../../../../types/types";
 
 export async function setupManagerAndCreateEvent(
   manager: PublicKey,
