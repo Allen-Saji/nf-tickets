@@ -101,7 +101,7 @@ export const eventRouter = createTRPCRouter({
         category: z.nativeEnum(Category),
         capacity: z.number().int().positive(),
         description: z.string().optional(),
-        imageUrl: z.string().url().optional(),
+        imageUrl: z.string().url(),
         artistWallet: z.string(),
         managerPDA: z.string(),
         isTicketTransferable: z.boolean().default(false),
