@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useRef } from "react";
 import { Wifi, Battery } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Phone = () => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -58,9 +59,12 @@ const Phone = () => {
               {/* F1 Racing */}
               <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
                 <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-[#DEFF58] rounded-md flex items-center justify-center mr-2">
-                    <span className="text-black text-xs font-bold">F1</span>
-                  </div>
+                  <Avatar className="h-8 w-8 mr-2 bg-[#DEFF58] text-black">
+                    <AvatarImage src="/phone-icons/formula1.jpg" alt="F1" />
+                    <AvatarFallback className="bg-[#DEFF58] text-black text-xs font-bold">
+                      F1
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <h4 className="text-white text-sm font-semibold">
                       Formula 1
@@ -79,9 +83,12 @@ const Phone = () => {
               {/* Ted Talk */}
               <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
                 <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-[#DEFF58] rounded-md flex items-center justify-center mr-2">
-                    <span className="text-black text-xs font-bold">TED</span>
-                  </div>
+                  <Avatar className="h-8 w-8 mr-2 bg-[#DEFF58] text-black">
+                    <AvatarImage src="/phone-icons/tedx.jpeg" alt="TED" />
+                    <AvatarFallback className="bg-[#DEFF58] text-black text-xs font-bold">
+                      TED
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <h4 className="text-white text-sm font-semibold">
                       TED Talk
@@ -100,9 +107,15 @@ const Phone = () => {
               {/* Comedy Show */}
               <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
                 <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-[#DEFF58] rounded-md flex items-center justify-center mr-2">
-                    <span className="text-black text-xs font-bold">MR</span>
-                  </div>
+                  <Avatar className="h-8 w-8 mr-2 bg-[#DEFF58] text-black">
+                    <AvatarImage
+                      src="/phone-icons/matt-rife-bg.jpg"
+                      alt="Matt Rife"
+                    />
+                    <AvatarFallback className="bg-[#DEFF58] text-black text-xs font-bold">
+                      MR
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <h4 className="text-white text-sm font-semibold">
                       Matt Rife
@@ -126,9 +139,15 @@ const Phone = () => {
               {/* Movie Premiere */}
               <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
                 <div className="flex items-center mb-2">
-                  <div className="w-8 h-8 bg-[#DEFF58] rounded-md flex items-center justify-center mr-2">
-                    <span className="text-black text-xs font-bold">AV</span>
-                  </div>
+                  <Avatar className="h-8 w-8 mr-2 bg-[#DEFF58] text-black">
+                    <AvatarImage
+                      src="/phone-icons/secret_wars.jpeg"
+                      alt="Avengers"
+                    />
+                    <AvatarFallback className="bg-[#DEFF58] text-black text-xs font-bold">
+                      AV
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <h4 className="text-white text-sm font-semibold">
                       Avengers
