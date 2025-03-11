@@ -145,9 +145,9 @@ const Navbar = () => {
                 </DropdownMenu>
               </div>
             ) : (
-              <Link href="/signup">
+              <Link href="/login">
                 <ShimmerButton className="h-12 px-6 py-3 text-lg font-semibold hover:text-[#DEFF58]">
-                  signup
+                  login
                 </ShimmerButton>
               </Link>
             )}
