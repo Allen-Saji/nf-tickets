@@ -269,7 +269,7 @@ const EventDetails = ({ eventData, artistData }: any) => {
 
               {/* NFT Ticket Preview - always shown */}
               <div className="relative w-full h-[380px] mb-6 border-2 border-[#DEFF58] rounded-xl overflow-hidden">
-                <div className="absolute inset-0 p-4 flex flex-col justify-between">
+                <div className="absolute z-10 inset-0 p-4 flex flex-col justify-between">
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-[#DEFF58] font-bold">
@@ -280,7 +280,9 @@ const EventDetails = ({ eventData, artistData }: any) => {
                       </h3>
                     </div>
                     <div className="bg-[#DEFF58] text-black rounded-full p-2">
-                      <span className="text-xs font-bold">#001</span>
+                      <span className="text-xs font-bold">
+                        # {eventData.capacity - eventData.ticketsRemaining + 1}
+                      </span>
                     </div>
                   </div>
                   <div className="space-y-1 text-sm">
@@ -290,7 +292,7 @@ const EventDetails = ({ eventData, artistData }: any) => {
                     </p>
                   </div>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute z-0 inset-0 flex items-center justify-center">
                   <Image
                     src={eventData.imageUrl || "/default-ticket.jpg"}
                     alt="NFT Ticket QR Code"
