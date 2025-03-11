@@ -181,7 +181,7 @@ export default function EventCarousel({
         />
         <div className="absolute inset-0 bg-black/40" />
 
-        {/* We'll also add the slide-in content */}
+        {/* Content Area */}
         <div
           className={`absolute bottom-12 left-6 z-10 max-w-md transition-opacity duration-300 ease-in-out ${
             isTransitioning ? "opacity-0" : "opacity-100"
@@ -200,7 +200,7 @@ export default function EventCarousel({
 
           <div className="flex items-center gap-3">
             <Link
-              href={`/events/${currentEvent.id}/book`}
+              href={`/events/${currentEvent.id}`}
               className="bg-[#DEFF58] text-black px-3 py-1.5 font-medium text-sm rounded hover:bg-[#DEFF58]/80 hover:scale-105 transition"
             >
               Book Tickets
@@ -226,23 +226,23 @@ export default function EventCarousel({
         </div>
       </div>
 
-      {/* Navigation arrows */}
+      {/* Navigation arrows - Repositioned to not interfere with content */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center text-white text-4xl font-light opacity-90 hover:opacity-100 transition-opacity hover:scale-110"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-12 h-full flex items-center justify-start text-white text-4xl font-light opacity-70 hover:opacity-100 transition-opacity hover:bg-black/20"
         aria-label="Previous slide"
         disabled={isTransitioning}
       >
-        ‹
+        <div className="pl-2">‹</div>
       </button>
 
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center text-white text-4xl font-light opacity-90 hover:opacity-100 transition-opacity hover:scale-110"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-12 h-full flex items-center justify-end text-white text-4xl font-light opacity-70 hover:opacity-100 transition-opacity hover:bg-black/20"
         aria-label="Next slide"
         disabled={isTransitioning}
       >
-        ›
+        <div className="pr-2">›</div>
       </button>
 
       {/* Indicators */}
