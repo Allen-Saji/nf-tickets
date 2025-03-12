@@ -13,15 +13,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -35,80 +34,78 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?        @unique
   emailVerified DateTime?
   image         String?
-  role          Role      @default(ATTENDEE) 
-  wallets        String[]  @default([])
-  artistProfile ArtistProfile? 
+  role          Role           @default(ATTENDEE)
+  wallets       String[]       @default([])
+  password      String?
   accounts      Account[]
+  artistProfile ArtistProfile?
   sessions      Session[]
-  password     String?
 }
 
 model ArtistProfile {
-  id                Int      @id @default(autoincrement())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade) 
-  artistName        String
-  bio               String?
-  genre             String
-  profilePictureUrl String?
+  id                 Int      @id @default(autoincrement())
+  userId             String   @unique
+  artistName         String
+  bio                String?
+  genre              String
+  profilePictureUrl  String?
   backgroundImageUrl String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  events            Event[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events             Event[]
 }
 
-
 model Event {
-  id                  Int           @id @default(autoincrement())
-  artistId            Int
-  artist              ArtistProfile @relation(fields: [artistId], references: [id])
-  eventName           String
-  eventDate           DateTime
-  venue               String
-  city                String
-  category            Category
-  capacity            Int
-  description         String?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  imageUrl            String
-  artistWallet        String
-  isTicketTransferable Boolean      @default(false)
-  managerPDA          String
-  eventPublicKey      String
-  ticketPrice         Float
-  ticketsRemaining    Int
-  venueAuthority      String        @default("HLgXScitaoBUU3S9DhqBSHSXuHzgDX3kdSVJ2YzsS6HR")
-  tickets             Ticket[]      // Added this to make the relation bidirectional
+  id                   Int           @id @default(autoincrement())
+  artistId             Int
+  eventName            String
+  eventDate            DateTime
+  venue                String
+  city                 String
+  category             Category
+  capacity             Int
+  description          String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  imageUrl             String
+  artistWallet         String
+  isTicketTransferable Boolean       @default(false)
+  managerPDA           String
+  eventPublicKey       String
+  ticketPrice          Float
+  ticketsRemaining     Int
+  venueAuthority       String        @default("HLgXScitaoBUU3S9DhqBSHSXuHzgDX3kdSVJ2YzsS6HR")
+  artist               ArtistProfile @relation(fields: [artistId], references: [id])
+  tickets              Ticket[]
 }
 
 model Ticket {
-  id             Int    @id @default(autoincrement())
-  ticketAddress  String @unique
-  ownerWallet    String
-  txnSignature   String
-  eventId        Int
-  event          Event  @relation(fields: [eventId], references: [id])
+  id            Int    @id @default(autoincrement())
+  ticketAddress String @unique
+  ownerWallet   String
+  txnSignature  String
+  eventId       Int
+  event         Event  @relation(fields: [eventId], references: [id])
 }
 
 model Platform {
-  id                String   @id @default(cuid())
-  platformName      String   @unique
-  programId         String
-  platformPda       String   @unique
-  rewardsMintPda    String   @unique
-  treasuryPda       String   @unique
-  adminWallet       String
-  fee               Int
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id             String   @id @default(cuid())
+  platformName   String   @unique
+  programId      String
+  platformPda    String   @unique
+  rewardsMintPda String   @unique
+  treasuryPda    String   @unique
+  adminWallet    String
+  fee            Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
-
 
 model VerificationToken {
   identifier String
@@ -119,7 +116,7 @@ model VerificationToken {
 }
 
 enum Category {
-  Music 
+  Music
   Comedy
   Tech
   Dance
