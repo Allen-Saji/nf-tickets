@@ -291,11 +291,6 @@ const EventDetails = ({ eventData, artistData }: any) => {
                         {eventData.eventName}
                       </h3>
                     </div>
-                    <div className="bg-[#DEFF58] text-black rounded-full p-2">
-                      <span className="text-xs font-bold">
-                        # {eventData.capacity - eventData.ticketsRemaining + 1}
-                      </span>
-                    </div>
                   </div>
                   <div className="space-y-1 text-sm">
                     <p>{formatDate(eventData.eventDate)}</p>
