@@ -11,13 +11,15 @@ import {
   Share2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useProgram } from "@/app/lib/solana/hooks/use-program";
 import { mintTicket } from "@/app/lib/solana/instructions/ticket";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 import { TicketArgs } from "@/types/types";
 import dynamic from "next/dynamic";
+import { useSession } from "next-auth/react";
+
 const WalletMultiButton = dynamic(
   async () =>
     (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
@@ -37,6 +39,9 @@ interface TicketType {
 
 const EventDetails = ({ eventData, artistData }: any) => {
   const router = useRouter();
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated";
+
   const [showNFT, setShowNFT] = useState(false);
   const { program, provider } = useProgram();
   const { connected, publicKey } = useWallet();
@@ -72,6 +77,15 @@ const EventDetails = ({ eventData, artistData }: any) => {
   };
 
   const handleBookTicket = async () => {
+    if (!isAuthenticated) {
+      toast.info("Authentication Required", {
+        description: "Please sign in to book tickets for this event.",
+        duration: 5000,
+      });
+      router.push("/login");
+      return;
+    }
+
     if (!program || !provider || !connected) {
       toast.error("Wallet Connection Error", {
         description: "Please connect your wallet to book a ticket.",
@@ -80,10 +94,8 @@ const EventDetails = ({ eventData, artistData }: any) => {
       return;
     }
     try {
-      // Show loading state
       setIsLoading(true);
 
-      // 1. Mint the ticket on Solana blockchain
       const ticketArgs: TicketArgs = {
         name: eventData.eventName,
         uri: eventData.imageUrl,
@@ -311,15 +323,22 @@ const EventDetails = ({ eventData, artistData }: any) => {
                     </span>
                   </div>
 
-                  {/* Book Your Show button - only active when wallet is connected */}
+                  {/* Book Your Show button - checks for both auth and wallet connection */}
                   <Button
                     className="w-full bg-[#DEFF58] text-black font-semibold rounded-full py-6 gap-2 transition-all duration-300 hover:bg-[#f0ff85] hover:scale-105 mb-4"
                     onClick={handleBookTicket}
-                    disabled={!connected || isLoading}
+                    disabled={isLoading}
                   >
                     {isLoading ? "Processing..." : "Book Your Show"}
                     <Ticket className="w-5 h-5" />
                   </Button>
+
+                  {/* Display auth status */}
+                  {!isAuthenticated && (
+                    <p className="text-amber-500 text-sm text-center mb-3">
+                      You need to sign in to book tickets
+                    </p>
+                  )}
 
                   {/* Wallet connect button using the Solana wallet adapter */}
                   <div className="wallet-adapter-wrapper mt-3 flex justify-center">
