@@ -3,7 +3,12 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-const EventCard = ({ event, index, activeIndex, setActiveIndex }: any) => {
+export const EventCard = ({
+  event,
+  index,
+  activeIndex,
+  setActiveIndex,
+}: any) => {
   const router = useRouter();
   const isActive = activeIndex === index;
   const cardWidth = 340;

@@ -1,6 +1,13 @@
+import { Suspense } from "react";
 import { api } from "@/trpc/server";
-import ArtistProfile from "@/components/artist/artist-profile";
 import { notFound } from "next/navigation";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const DynamicArtistProfile = dynamic(
+  () => import("@/components/artist/artist-profile"),
+  { ssr: false }
+);
 
 interface Params {
   params: {
@@ -44,13 +51,29 @@ export default async function ArtistPage({ params }: Params) {
     };
 
     return (
-      <ArtistProfile
-        artistData={artistWithSocialLinks}
-        eventsData={eventsData}
-      />
+      <div className="w-full">
+        <div className="relative" style={{ minHeight: "600px" }}>
+          <Suspense
+            fallback={
+              <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <Skeleton className="h-48 w-full rounded-lg mb-4" />
+                <Skeleton className="h-24 w-3/4 rounded-lg mb-4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Skeleton className="h-64 w-full rounded-lg" />
+                  <Skeleton className="h-64 w-full rounded-lg" />
+                </div>
+              </div>
+            }
+          >
+            <DynamicArtistProfile
+              artistData={artistWithSocialLinks}
+              eventsData={eventsData}
+            />
+          </Suspense>
+        </div>
+      </div>
     );
   } catch (error) {
-    console.error("Error fetching artist data:", error);
     return notFound();
   }
 }
