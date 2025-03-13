@@ -243,4 +243,25 @@ export const artistRouter = createTRPCRouter({
 
       return artistProfile;
     }),
+
+  getByName: publicProcedure
+    .input(z.object({ artistName: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const artist = await ctx.db.artistProfile.findFirst({
+        where: {
+          artistName: input.artistName,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
+      });
+
+      return artist;
+    }),
 });

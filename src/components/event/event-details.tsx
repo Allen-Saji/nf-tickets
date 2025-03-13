@@ -179,7 +179,7 @@ const EventDetails = ({ eventData, artistData }: any) => {
   };
   const handleArtistProfile = () => {
     // Navigate to artist profile
-    router.push(`/artist/${artistData.id}`);
+    router.push(`/artist/${artistData.artistName}`);
   };
 
   return (

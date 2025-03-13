@@ -117,7 +117,7 @@ export default function LoginPage() {
           duration: 3000,
           className: "bg-[#1a1d2d] border-green-500 text-white",
         });
-        router.push("/artist/dashboard");
+        router.push("/events");
       }
     } catch (error) {
       toast.error("Authentication Failed", {
