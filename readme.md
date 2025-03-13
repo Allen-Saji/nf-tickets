@@ -1,4 +1,4 @@
-## Contract Devnet Address: 5qCfMhUmbJmau9SGHP1qAEMfKwEzyyyQ846SMXX2y6w
+## Contract Devnet Address: 1Vw6q8hdnGaQpk7StB4qRcbYUiTr52w1vqjfmTMFhac
 
 # NFTickets: 🎟️ Artist & Events Social Media Ticketing Platform
 
