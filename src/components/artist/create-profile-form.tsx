@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
-import { ArrowRight, Upload, Loader2, Lock } from "lucide-react";
+import { ArrowRight, Loader2, Lock } from "lucide-react";
 import { Particles } from "@/components/magicui/particles";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { signIn } from "next-auth/react";
+import { UploadImage, ImageUploadResponse } from "../upload-image";
 
 enum Genre {
   Music = "Music",
@@ -54,8 +55,8 @@ const ArtistProfileSchema = z
         "Password must contain at least one uppercase letter, one lowercase letter, and one number"
       ),
     confirmPassword: z.string().min(1, "Please confirm your password"),
-    profilePicture: z.any().optional(),
-    backgroundImage: z.any().optional(),
+    profilePictureUrl: z.string().optional(),
+    backgroundImageUrl: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -66,11 +67,18 @@ type ArtistProfileFormData = z.infer<typeof ArtistProfileSchema>;
 
 export default function CreateArtistProfileForm() {
   const router = useRouter();
-  const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
   // Image upload states
   const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+
+  // State to store selected image details for UI feedback
+  const [profilePicDetails, setProfilePicDetails] = useState<{
+    name: string;
+  } | null>(null);
+  const [bannerDetails, setBannerDetails] = useState<{ name: string } | null>(
+    null
+  );
 
   // Initialize the form with react-hook-form
   const form = useForm<ArtistProfileFormData>({
@@ -82,8 +90,8 @@ export default function CreateArtistProfileForm() {
       genre: undefined,
       password: "",
       confirmPassword: "",
-      profilePicture: undefined,
-      backgroundImage: undefined,
+      profilePictureUrl: "",
+      backgroundImageUrl: "",
     },
   });
 
@@ -110,64 +118,36 @@ export default function CreateArtistProfileForm() {
     },
   });
 
-  const uploadImage = async (file: File, isProfilePic: boolean = true) => {
-    try {
-      if (isProfilePic) {
-        setIsUploadingProfilePic(true);
-      } else {
-        setIsUploadingBanner(true);
-      }
+  const handleProfilePicUploadStart = () => {
+    setIsUploadingProfilePic(true);
+  };
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", "nf-tickets");
+  const handleProfilePicUploadSuccess = (response: ImageUploadResponse) => {
+    form.setValue("profilePictureUrl", response.url);
+    setProfilePicDetails({ name: response.name });
+    setIsUploadingProfilePic(false);
+  };
 
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+  const handleProfilePicUploadError = () => {
+    setIsUploadingProfilePic(false);
+  };
 
-      if (!response.ok) {
-        throw new Error(`Image upload failed: ${response.statusText}`);
-      }
+  const handleBannerUploadStart = () => {
+    setIsUploadingBanner(true);
+  };
 
-      const data = await response.json();
-      return data.secure_url;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Image upload failed";
-      toast.error("Upload Error", {
-        description: errorMessage,
-        duration: 5000,
-      });
-      return "";
-    } finally {
-      if (isProfilePic) {
-        setIsUploadingProfilePic(false);
-      } else {
-        setIsUploadingBanner(false);
-      }
-    }
+  const handleBannerUploadSuccess = (response: ImageUploadResponse) => {
+    form.setValue("backgroundImageUrl", response.url);
+    setBannerDetails({ name: response.name });
+    setIsUploadingBanner(false);
+  };
+
+  const handleBannerUploadError = () => {
+    setIsUploadingBanner(false);
   };
 
   const onSubmit = async (data: ArtistProfileFormData) => {
     try {
-      let profilePictureUrl = "";
-      let backgroundImageUrl = "";
-
-      if (data.profilePicture instanceof File) {
-        profilePictureUrl = await uploadImage(data.profilePicture, true);
-        if (!profilePictureUrl) return; // Stop if upload failed
-      }
-
-      if (data.backgroundImage instanceof File) {
-        backgroundImageUrl = await uploadImage(data.backgroundImage, false);
-        if (!backgroundImageUrl) return; // Stop if upload failed
-      }
-
       const formattedData = {
         // User data
         name: data.artistName,
@@ -177,8 +157,8 @@ export default function CreateArtistProfileForm() {
         artistName: data.artistName,
         bio: data.bio || "",
         genre: data.genre,
-        profilePictureUrl,
-        backgroundImageUrl,
+        profilePictureUrl: data.profilePictureUrl || "",
+        backgroundImageUrl: data.backgroundImageUrl || "",
       };
 
       await createProfile.mutateAsync(formattedData);
@@ -373,8 +353,8 @@ export default function CreateArtistProfileForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <FormField
                   control={form.control}
-                  name="profilePicture"
-                  render={({ field: { value, onChange, ...field } }) => (
+                  name="profilePictureUrl"
+                  render={() => (
                     <FormItem>
                       <FormLabel className="text-gray-200 text-sm font-medium">
                         Profile Picture
@@ -382,48 +362,28 @@ export default function CreateArtistProfileForm() {
                       <div className="flex flex-col gap-2">
                         <FormControl>
                           <div className="bg-[#1a1d2d] border border-gray-700 border-dashed rounded-md p-4 text-center cursor-pointer hover:bg-[#262a3d] transition-colors relative">
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              id="profilePicture"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file && file.size > 5 * 1024 * 1024) {
-                                  toast.error("File too large", {
-                                    description:
-                                      "Profile picture must be less than 5MB",
-                                  });
-                                  return;
-                                }
-                                onChange(file);
-                              }}
-                              disabled={isUploadingProfilePic}
-                              {...field}
+                            <UploadImage
+                              onUploadStart={handleProfilePicUploadStart}
+                              onUploadSuccess={handleProfilePicUploadSuccess}
+                              onUploadError={handleProfilePicUploadError}
+                              isDisabled={
+                                isUploadingProfilePic || isUploadingBanner
+                              }
+                              maxSize={5}
+                              folder="/artists/profile"
+                              fileName="profile"
+                              tags={["profile", "artist"]}
+                              customLabel="Upload profile image"
+                              id="profileImageUpload"
                             />
-                            <label
-                              htmlFor="profilePicture"
-                              className="cursor-pointer flex flex-col items-center gap-2"
-                            >
-                              {isUploadingProfilePic ? (
-                                <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
-                              ) : (
-                                <Upload className="w-5 h-5 text-gray-400" />
-                              )}
-                              <span className="text-sm text-gray-400">
-                                {isUploadingProfilePic
-                                  ? "Uploading..."
-                                  : "Upload image"}
-                              </span>
-                            </label>
                           </div>
                         </FormControl>
                         <p className="text-xs text-gray-400">
                           Image should be less than 5MB
                         </p>
-                        {value && !isUploadingProfilePic && (
+                        {profilePicDetails && !isUploadingProfilePic && (
                           <p className="text-xs text-green-400">
-                            File selected: {value.name}
+                            File selected: {profilePicDetails.name}
                           </p>
                         )}
                       </div>
@@ -434,8 +394,8 @@ export default function CreateArtistProfileForm() {
 
                 <FormField
                   control={form.control}
-                  name="backgroundImage"
-                  render={({ field: { value, onChange, ...field } }) => (
+                  name="backgroundImageUrl"
+                  render={() => (
                     <FormItem>
                       <FormLabel className="text-gray-200 text-sm font-medium">
                         Background Banner
@@ -443,48 +403,28 @@ export default function CreateArtistProfileForm() {
                       <div className="flex flex-col gap-2">
                         <FormControl>
                           <div className="bg-[#1a1d2d] border border-gray-700 border-dashed rounded-md p-4 text-center cursor-pointer hover:bg-[#262a3d] transition-colors">
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              id="backgroundImage"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file && file.size > 5 * 1024 * 1024) {
-                                  toast.error("File too large", {
-                                    description:
-                                      "Banner image must be less than 5MB",
-                                  });
-                                  return;
-                                }
-                                onChange(file);
-                              }}
-                              disabled={isUploadingBanner}
-                              {...field}
+                            <UploadImage
+                              onUploadStart={handleBannerUploadStart}
+                              onUploadSuccess={handleBannerUploadSuccess}
+                              onUploadError={handleBannerUploadError}
+                              isDisabled={
+                                isUploadingProfilePic || isUploadingBanner
+                              }
+                              maxSize={5}
+                              folder="/artists/banner"
+                              fileName="banner"
+                              tags={["banner", "artist"]}
+                              customLabel="Upload banner image"
+                              id="bannerImageUpload"
                             />
-                            <label
-                              htmlFor="backgroundImage"
-                              className="cursor-pointer flex flex-col items-center gap-2"
-                            >
-                              {isUploadingBanner ? (
-                                <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
-                              ) : (
-                                <Upload className="w-5 h-5 text-gray-400" />
-                              )}
-                              <span className="text-sm text-gray-400">
-                                {isUploadingBanner
-                                  ? "Uploading..."
-                                  : "Upload banner"}
-                              </span>
-                            </label>
                           </div>
                         </FormControl>
                         <p className="text-xs text-gray-400">
                           Image should be less than 5MB
                         </p>
-                        {value && !isUploadingBanner && (
+                        {bannerDetails && !isUploadingBanner && (
                           <p className="text-xs text-green-400">
-                            File selected: {value.name}
+                            File selected: {bannerDetails.name}
                           </p>
                         )}
                       </div>

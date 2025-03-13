@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import EventCardDeck from "@/components/event/card-deck";
 
 const ArtistProfile = ({ artistData, eventsData }: any) => {
   const router = useRouter();

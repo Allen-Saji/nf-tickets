@@ -7,13 +7,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
 import { Category } from "@prisma/client";
 import { formSchema } from "./eventSchema";
-import {
-  ArrowRight,
-  CalendarIcon,
-  Loader2,
-  Upload,
-  Wallet,
-} from "lucide-react";
+import { ArrowRight, CalendarIcon, Loader2, Wallet } from "lucide-react";
 import { Particles } from "@/components/magicui/particles";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +38,8 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import dynamic from "next/dynamic";
+import { UploadImage, ImageUploadResponse } from "../upload-image";
+
 const WalletMultiButton = dynamic(
   async () =>
     (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
@@ -54,12 +50,15 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import { setupManagerAndCreateEvent } from "@/app/lib/solana/instructions/event";
 import { useProgram } from "@/app/lib/solana/hooks/use-program";
 
+const NEXT_PUBLIC_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
+
 type FormValues = z.infer<typeof formSchema>;
 export default function CreateEventForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const [uploadedImageUrl, setUploadedImageUrl] = useState("");
+  const [uploadedFileName, setUploadedFileName] = useState("");
   const { connected, publicKey } = useWallet();
   const { program, provider } = useProgram();
 
@@ -118,40 +117,12 @@ export default function CreateEventForm() {
     }
   }, [connected, publicKey, form]);
 
-  const uploadImage = async (file: File) => {
-    try {
-      setIsUploadingImage(true);
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", "nf-tickets");
-
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Image upload failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data.secure_url;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Image upload failed";
-      toast.error("Upload Error", {
-        description: errorMessage,
-        duration: 5000,
-      });
-      return "";
-    } finally {
-      setIsUploadingImage(false);
+  // Set the uploaded image URL to the form when it changes
+  useEffect(() => {
+    if (uploadedImageUrl) {
+      form.setValue("imageUrl", uploadedImageUrl);
     }
-  };
+  }, [uploadedImageUrl, form]);
 
   const onSubmit = async (data: FormValues) => {
     if (!connected || !publicKey) {
@@ -174,16 +145,6 @@ export default function CreateEventForm() {
     setIsSubmitting(true);
 
     try {
-      let imageUrl = "";
-
-      if (data.imageUrl instanceof File) {
-        imageUrl = await uploadImage(data.imageUrl);
-        if (!imageUrl) {
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
       // Step 2: Call blockchain function to set up manager and create event
       toast.loading("Creating event ...");
 
@@ -199,7 +160,7 @@ export default function CreateEventForm() {
       const eventArgs = {
         name: data.eventName,
         category: data.category,
-        uri: imageUrl?.toString() || "",
+        uri: uploadedImageUrl || "",
         city: data.city,
         venue: data.venue,
         artist: publicKey.toString(),
@@ -268,7 +229,7 @@ export default function CreateEventForm() {
         // Format data for database with blockchain references
         const formattedData = {
           ...data,
-          imageUrl,
+          imageUrl: uploadedImageUrl,
           artistWallet: publicKey.toString(),
           managerPDA: result.managerPda.toString(),
           eventPublicKey: result.eventPublicKey.toString(),
@@ -296,6 +257,22 @@ export default function CreateEventForm() {
         duration: 5000,
       });
     }
+  };
+
+  const handleImageUploadStart = () => {
+    setIsUploadingImage(true);
+  };
+
+  const handleImageUploadSuccess = (response: ImageUploadResponse) => {
+    setIsUploadingImage(false);
+    if (response.url) {
+      setUploadedImageUrl(response.url);
+      setUploadedFileName(response.name || "Uploaded image");
+    }
+  };
+
+  const handleImageUploadError = (err: any) => {
+    setIsUploadingImage(false);
   };
 
   return (
@@ -579,7 +556,7 @@ export default function CreateEventForm() {
               <FormField
                 control={form.control}
                 name="imageUrl"
-                render={({ field: { value, onChange, ...field } }) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-gray-200 text-sm font-medium">
                       Event Image
@@ -593,52 +570,25 @@ export default function CreateEventForm() {
                               : "opacity-70"
                           }`}
                         >
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            id="imageUrl"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file && file.size > 5 * 1024 * 1024) {
-                                toast.error("File too large", {
-                                  description:
-                                    "Event image must be less than 5MB",
-                                });
-                                return;
-                              }
-                              onChange(file);
-                            }}
-                            disabled={isUploadingImage || !connected}
-                            {...field}
+                          <UploadImage
+                            onUploadSuccess={handleImageUploadSuccess}
+                            onUploadStart={handleImageUploadStart}
+                            onUploadError={handleImageUploadError}
+                            isDisabled={!connected}
+                            maxSize={5} // 5MB max
+                            folder="/event-images"
+                            fileName="event-image"
+                            tags={["event"]}
+                            customLabel="Upload event image"
                           />
-                          <label
-                            htmlFor="imageUrl"
-                            className={`flex flex-col items-center gap-2 ${
-                              connected
-                                ? "cursor-pointer"
-                                : "cursor-not-allowed"
-                            }`}
-                          >
-                            {isUploadingImage ? (
-                              <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
-                            ) : (
-                              <Upload className="w-5 h-5 text-gray-400" />
-                            )}
-                            <span className="text-sm text-gray-400">
-                              {isUploadingImage
-                                ? "Uploading..."
-                                : "Upload event image"}
-                            </span>
-                          </label>
                         </div>
                       </FormControl>
                       <p className="text-xs text-gray-400">
                         Image should be less than 5MB
                       </p>
-                      {value && !isUploadingImage && (
+                      {uploadedImageUrl && !isUploadingImage && (
                         <p className="text-xs text-green-400">
-                          File selected: {value.name}
+                          File uploaded: {uploadedFileName}
                         </p>
                       )}
                     </div>
